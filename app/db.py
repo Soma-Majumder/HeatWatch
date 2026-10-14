@@ -19,4 +19,8 @@ def connect(path: Path | str | None = None) -> sqlite3.Connection:
 
 def init_db(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA_PATH.read_text())
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(hpd_complaints)")}
+    if "address_norm" not in cols:          # databases created in phase 0
+        conn.execute("ALTER TABLE hpd_complaints ADD COLUMN address_norm TEXT")
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_hpd_addr_norm ON hpd_complaints(address_norm)")
     conn.commit()
