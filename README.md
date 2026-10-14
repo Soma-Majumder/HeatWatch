@@ -91,7 +91,7 @@ Some cases skip the score entirely:
 | 🎫 **Ticket store** | Creates tickets with hard-to-guess numbers, logs every step, and shows a safe public view | `app/tickets.py` |
 | 💌 **Replies and output gate** | Builds the tenant reply from fixed templates and blocks promises or claims of filing | `app/replies.py` |
 | 🔬 **Backtest** | Replays the scoring over past complaints to see how the bands behave | `app/backtest.py` |
-| 🧪 **Tests** | 56 tests covering the loader, schema, engine, tickets and replies | `tests/` |
+| 🧪 **Tests** | 61 tests covering the loader, refresh job, schema, engine, tickets and replies | `tests/` |
 
 ### 🔍 What the backtest showed
 
@@ -116,7 +116,6 @@ Two things to know:
 - 👩‍💼 The reviewer queue and escalation alerts
 - 🔄 Automatic re-check of late and repeated tickets
 - 🛡️ The four security requirements (see below)
-- ⏰ A daily job to refresh the data
 
 ### 🛡️ The four security requirements (planned)
 
@@ -144,6 +143,20 @@ python3 -m unittest discover -s tests
 
 The database is saved to `data/heatwatch.db` and is not committed to git.
 
+### 🔄 Keep the data fresh
+
+```bash
+python3 -m app.refresh
+```
+
+This pulls new complaints, drops anything older than two years, and rebuilds the address stats and priors. It is safe to run again, and if the city's site is down it leaves your existing data untouched and exits with an error. To run it every morning, add a line like this with `crontab -e` (adjust the folder):
+
+```
+0 5 * * * cd /path/to/HeatWatch && /usr/bin/python3 -m app.refresh >> data/refresh.log 2>&1
+```
+
+When it last ran, and any error, are stored in the database (`meta` table: `last_refresh`, `last_refresh_error`).
+
 ✔️ **Tests run automatically** on every pull request and on pushes to `main` (GitHub Actions, Python 3.10 and 3.13). The workflow is in `.github/workflows/tests.yml`.
 
 ---
@@ -154,6 +167,7 @@ The database is saved to `data/heatwatch.db` and is not committed to git.
 HeatWatch/
 ├── app/                    the engine
 │   ├── loader.py           pulls 311 data
+│   ├── refresh.py          daily job: load, prune, rebuild priors
 │   ├── address.py          cleans addresses
 │   ├── priors.py           builds close-time stats and repeat flags
 │   ├── triage.py           scoring and overrides
