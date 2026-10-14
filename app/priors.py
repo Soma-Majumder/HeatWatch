@@ -6,9 +6,9 @@ Prior keys are "scope|month|hour_bucket"; coarser fallbacks use "*":
 from datetime import datetime
 
 from .address import normalize_address
+from .config import get_settings
 
 MIN_N = 30            # minimum sample for a prior to be trusted
-REPEAT_MIN = 10       # an address needs at least this many complaints to be a repeat offender
 SCOPE = {"ENTIRE BUILDING": "building", "APARTMENT ONLY": "apartment"}
 
 
@@ -51,15 +51,17 @@ def backfill_address_norm(conn) -> int:
     return len(rows)
 
 
-def build_address_stats(conn) -> int:
+def build_address_stats(conn, threshold: int | None = None) -> int:
+    """Flag repeat offenders: addresses with at least `threshold` complaints in the window.
+
+    Defaults to Settings.repeat_min (200). Counts come from the cached 2-year window.
+    """
+    threshold = get_settings().repeat_min if threshold is None else threshold
     backfill_address_norm(conn)
     rows = conn.execute(
         "SELECT address_norm, COUNT(*) n, MAX(created_date) last FROM hpd_complaints"
         " WHERE address_norm != '' GROUP BY address_norm"
     ).fetchall()
-    counts = sorted(r["n"] for r in rows)
-    p95 = percentile(counts, 0.95) or 0
-    threshold = max(REPEAT_MIN, p95)
     with conn:
         conn.execute("DELETE FROM address_stats")
         conn.executemany(
@@ -107,5 +109,5 @@ def build_priors(conn) -> int:
     return len(out)
 
 
-def rebuild_all(conn) -> dict:
-    return {"address_stats": build_address_stats(conn), "priors": build_priors(conn)}
+def rebuild_all(conn, repeat_threshold: int | None = None) -> dict:
+    return {"address_stats": build_address_stats(conn, repeat_threshold), "priors": build_priors(conn)}

@@ -33,7 +33,7 @@ def seeded():
     for n in range(30):                         # many ordinary addresses, so repeat is a real outlier
         add(conn, f"o{n}", "2025-12-05T10:00:00", "2025-12-07T10:00:00", "APARTMENT ONLY", f"{n + 100} ORDINARY STREET")
     conn.commit()
-    priors.rebuild_all(conn)
+    priors.rebuild_all(conn, repeat_threshold=10)
     return conn
 
 

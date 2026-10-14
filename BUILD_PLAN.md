@@ -61,6 +61,7 @@ Initial scoring, to be tuned in the backtest (section 7). These weights are star
 | Reopened ticket | +2 |
 
 Priority bands: critical ≥ 8, high 5–7, normal 3–4, low < 3.
+Repeat-offender address: 200 or more complaints over the rolling two-year window (21 addresses, about 19% of complaints). Configurable with `HEATWATCH_REPEAT_MIN`. A complaint is "active" for duplicate purposes for 7 days (99.9% of complaints close within 7 days; 96% of rows still marked Open are older than that).
 Hard overrides (always `critical`, straight to escalation): any safety flag; a vulnerable household with no heat in heat season (plus the emergency-services message); and a whole-building outage that is also a repeat-offender address or has lasted 24+ hours.
 A plain whole-building outage in heat season scores 5 and is `high`; an overnight report adds a point but does not make it critical. Thresholds were chosen from the historical score distribution (see `app/backtest.py`) and re-check after the first real tickets, since duration and vulnerability are not in the public data.
 
