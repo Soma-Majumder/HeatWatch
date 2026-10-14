@@ -33,6 +33,8 @@ class Intake:
     vulnerable: bool = False
     safety_flag: bool = False
     reopened: bool = False
+    description: str | None = None      # tenant's own words, kept for the reviewer (shown quoted)
+    lang: str = "en"
     created_at: datetime | None = None
 
 

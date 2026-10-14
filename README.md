@@ -88,8 +88,10 @@ Some cases skip the score entirely:
 | 👯 **Duplicate check** | Spots an open complaint already filed at the same address | `app/duplicates.py` |
 | ⏳ **ETA lookup** | Quotes "usually resolved in about X hours, 9 in 10 within Y" | `app/eta.py` |
 | 🧩 **One-call engine** | Takes a complaint and returns priority, reasons, duplicate, ETA and whether to escalate, all in one call | `app/engine.py` |
+| 🎫 **Ticket store** | Creates tickets with hard-to-guess numbers, logs every step, and shows a safe public view | `app/tickets.py` |
+| 💌 **Replies and output gate** | Builds the tenant reply from fixed templates and blocks promises or claims of filing | `app/replies.py` |
 | 🔬 **Backtest** | Replays the scoring over past complaints to see how the bands behave | `app/backtest.py` |
-| 🧪 **Tests** | 36 tests covering the loader, schema and engine | `tests/` |
+| 🧪 **Tests** | 56 tests covering the loader, schema, engine, tickets and replies | `tests/` |
 
 ### 🔍 What the backtest showed
 
@@ -110,8 +112,7 @@ Two things to know:
 ## 🚧 What is not built yet
 
 - 💬 The chat that collects a complaint (and Spanish support)
-- 🎫 Ticket numbers and tenant replies
-- 🔎 Ticket lookup and follow-ups ("it's fixed" or "still broken")
+- 🖥️ A page or chat for ticket lookup and follow-ups (the data layer exists)
 - 👩‍💼 The reviewer queue and escalation alerts
 - 🔄 Automatic re-check of late and repeated tickets
 - 🛡️ The four security requirements (see below)
@@ -157,6 +158,8 @@ HeatWatch/
 │   ├── duplicates.py       duplicate detection
 │   ├── eta.py              expected timeline
 │   ├── engine.py           one call: complaint in, full assessment out
+│   ├── tickets.py          ticket store and public view
+│   ├── replies.py          reply templates and output gate
 │   └── backtest.py         checks the bands against history
 ├── tests/                  unit tests
 ├── docs/
@@ -164,6 +167,7 @@ HeatWatch/
 │   ├── threshold-chart.svg      the scoring chart
 │   └── security-layer.md        plain-English security addendum
 ├── BUILD_PLAN.md           phase-by-phase plan
+├── INTERFACES.md           contracts between the engine and the agent/interface
 └── HeatWatch PRD.docx      product requirements
 ```
 
