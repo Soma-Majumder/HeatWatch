@@ -7,3 +7,7 @@ __pycache__/
 *.sqlite3
 traces/
 .DS_Store
+data/
+__pycache__/
+*.pyc
+.env
