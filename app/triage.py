@@ -15,9 +15,10 @@ WEIGHTS = {
     "repeat_address": 2,
     "reopened": 2,
 }
-BANDS = [(8, "critical"), (6, "high"), (3, "normal"), (float("-inf"), "low")]
+BANDS = [(8, "critical"), (5, "high"), (3, "normal"), (float("-inf"), "low")]
 
-# A whole-building outage with at least one of these is critical regardless of score.
+# A whole-building outage that is also a repeat address or has lasted this long is critical
+# regardless of score. Overnight reports add points but do not trigger the override.
 AGGRAVATOR_HOURS = 24
 
 
@@ -83,10 +84,8 @@ def score_complaint(c: Complaint) -> TriageResult:
     if c.reopened:
         add("reopened", "ticket reopened")
 
-    aggravated = (
-        is_overnight(c.created_at)
-        or c.repeat_address
-        or (c.duration_hours is not None and c.duration_hours >= AGGRAVATOR_HOURS)
+    aggravated = c.repeat_address or (
+        c.duration_hours is not None and c.duration_hours >= AGGRAVATOR_HOURS
     )
     override = None
     if c.safety_flag:
