@@ -125,6 +125,34 @@ however many districts exist" rule) held 72%, clearly concentrated. The fixed ba
 skill-driven agent should out-perform the baseline, which is exactly what Day 3's comparison is
 for.
 
+## Addendum: fixing the 892% share-of-change number
+
+Live-testing Bronx's current (partial, live) season turned up `top 2 districts hold 892% of the
+total change` -- correct arithmetic, meaningless as a statement. District 14 rose +65 and district
+11 rose +51 (+116 combined), but other Bronx districts fell by about 103 combined, leaving a net
+citywide change of only +13. Dividing a real number (116) by a near-zero one (13) produces a ratio
+with no real-world meaning, and worse, invites a reader to think conditions are "9x worse" in those
+two districts when the data doesn't support that.
+
+**Fix, in `tools.py:compare_periods`:** `top_2_share_of_change` and `rest_of_area_pct` are now
+withheld (`None`, flagged `concentration_small_base`) whenever the net citywide change is smaller
+than `SMALL_BASE_THRESHOLD` (20) -- the same guard already used for a single group's percent
+change. `baseline.py` falls back to naming whichever specific districts moved by at least that
+threshold on their own (`notable`, ranked by `abs(change)`), and drills into buildings for the
+rising ones among them, rather than leaning on a ratio that can't carry the weight being put on it.
+
+**Forward-looking limitations noted but not fixed in this pipeline** (worth remembering for the
+skill and claim check in Day 2/3, and for the briefing-writer wording):
+- **Spike vs. chronic:** a two-period total can't tell a one-time building outage (already being
+  fixed) from a season-long pattern of neglect -- that needs a per-week/per-day trend for whichever
+  building or district stands out, not just two numbers.
+- **No size normalization:** 311 doesn't carry unit counts, so `count_buildings` can't say whether
+  560 complaints at one address reflects an enormous building or a uniquely bad one. Worth naming
+  as a stated limitation in the briefing rather than letting raw counts imply severity on their own.
+- **Weather should be stated as a conclusion, not a side-by-side number:** e.g. "rose far more than
+  the weather would predict" versus "tracks the colder weather, not unusual" -- not two percentages
+  the reader has to compare themselves.
+
 ## Operational notes for `tools.py`
 
 - Unfiltered or loosely-filtered aggregate queries can take 15-30s, and hit transient `503`s under

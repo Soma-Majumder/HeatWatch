@@ -87,8 +87,20 @@ def run_baseline(question: str, as_of: date | None = None) -> str:
     for g in top_groups:
         lines.append(f"  district {g['group']}: {g['count_a']} vs {g['count_b']} ({_fmt_pct(g['pct'])})")
     share = comparison["top_2_share_of_change"]
+    # Districts whose own change is large enough to matter on its own, even when
+    # the citywide net is too small to divide by (see tools.compare_periods).
+    notable = sorted(
+        (g for g in comparison["groups"] if abs(g["change"]) >= config.SMALL_BASE_THRESHOLD),
+        key=lambda g: -abs(g["change"]),
+    )[:2]
     if share is not None:
         lines.append(f"  top 2 districts hold {share * 100:.0f}% of the total change")
+    elif notable:
+        named = ", ".join(f"district {g['group']} ({g['change']:+d})" for g in notable)
+        lines.append(
+            f"  citywide change is too small to attribute a share to any district, but "
+            f"{named} moved enough on their own to stand out -- other districts offset them"
+        )
 
     temperature = tools.get_temperature(
         GetTemperatureArgs(period_a=period_a, period_b=period_b, reason="Baseline always checks weather")
@@ -100,18 +112,26 @@ def run_baseline(question: str, as_of: date | None = None) -> str:
         f"({_fmt_pct(temperature['heating_demand_pct_change'])})"
     )
 
-    concentrated = share is not None and share >= CONCENTRATION_THRESHOLD and total["change"] > 0
-    if concentrated:
+    concentrated_by_share = share is not None and share >= CONCENTRATION_THRESHOLD and total["change"] > 0
+    rising_notable = [g for g in notable if g["change"] > 0]
+    offsetting = share is None and bool(rising_notable)
+
+    if concentrated_by_share or offsetting:
+        drill_districts = [g for g in top_groups[:2] if g["change"] > 0] if concentrated_by_share else rising_notable
         lines.append("")
-        lines.append(f"Change is concentrated (>= {CONCENTRATION_THRESHOLD:.0%} in top 2 districts) -- drilling into buildings.")
-        for g in top_groups[:2]:
-            if g["change"] <= 0:
-                continue
+        if concentrated_by_share:
+            lines.append(f"Change is concentrated (>= {CONCENTRATION_THRESHOLD:.0%} in top 2 districts) -- drilling into buildings.")
+        else:
+            lines.append(
+                "Citywide change is small, but specific districts moved enough on their own to be "
+                "worth checking -- drilling into buildings there, not because of a share-of-change number."
+            )
+        for g in drill_districts:
             district_area = Area(level="council_district", value=g["group"])
             buildings = tools.count_buildings(
                 CountBuildingsArgs(
                     area=district_area, period_a=period_a, period_b=period_b, top_n=5,
-                    reason=f"District {g['group']} holds a large share of the change",
+                    reason=f"District {g['group']} changed by {g['change']:+d}, worth a closer look",
                 )
             )
             lines.append(

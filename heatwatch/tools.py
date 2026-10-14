@@ -107,8 +107,20 @@ def compare_periods(args: ComparePeriodsArgs) -> dict:
     total_a, total_b = sum(counts_a.values()), sum(counts_b.values())
     total_change = total_a - total_b
     rows_by_change = sorted(rows, key=lambda r: -r["change"])
-    top_2_change = sum(r["change"] for r in rows_by_change[:2] if r["change"] > 0)
-    top_2_share = round(top_2_change / total_change, 3) if total_change else None
+
+    # "Share of change" divides by the net total, which can be near zero even when
+    # individual groups moved a lot, if gains and losses elsewhere happened to
+    # offset (confirmed on real Bronx data: two districts rose by 65 and 51 while
+    # the net citywide change was only 13, producing a nonsensical 892% share).
+    # Below this threshold the ratio isn't a meaningful percentage of anything,
+    # so it's withheld rather than reported, the same way a small per-group base
+    # withholds that group's own percent change above.
+    concentration_small_base = abs(total_change) < config.SMALL_BASE_THRESHOLD
+    if concentration_small_base:
+        top_2_share = None
+    else:
+        top_2_change = sum(r["change"] for r in rows_by_change[:2] if r["change"] > 0)
+        top_2_share = round(top_2_change / total_change, 3)
 
     return {
         "total": {
@@ -120,6 +132,7 @@ def compare_periods(args: ComparePeriodsArgs) -> dict:
         "groups": rows,
         "top_2_share_of_change": top_2_share,
         "rest_of_area_pct": round(1 - top_2_share, 3) if top_2_share is not None else None,
+        "concentration_small_base": concentration_small_base,
     }
 
 
