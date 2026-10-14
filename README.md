@@ -87,8 +87,9 @@ Some cases skip the score entirely:
 | ⚖️ **Scoring and overrides** | Turns a complaint into a priority with the reasons listed | `app/triage.py` |
 | 👯 **Duplicate check** | Spots an open complaint already filed at the same address | `app/duplicates.py` |
 | ⏳ **ETA lookup** | Quotes "usually resolved in about X hours, 9 in 10 within Y" | `app/eta.py` |
+| 🧩 **One-call engine** | Takes a complaint and returns priority, reasons, duplicate, ETA and whether to escalate, all in one call | `app/engine.py` |
 | 🔬 **Backtest** | Replays the scoring over past complaints to see how the bands behave | `app/backtest.py` |
-| 🧪 **Tests** | 26 tests covering the loader, schema and engine | `tests/` |
+| 🧪 **Tests** | 36 tests covering the loader, schema and engine | `tests/` |
 
 ### 🔍 What the backtest showed
 
@@ -155,6 +156,7 @@ HeatWatch/
 │   ├── triage.py           scoring and overrides
 │   ├── duplicates.py       duplicate detection
 │   ├── eta.py              expected timeline
+│   ├── engine.py           one call: complaint in, full assessment out
 │   └── backtest.py         checks the bands against history
 ├── tests/                  unit tests
 ├── docs/
