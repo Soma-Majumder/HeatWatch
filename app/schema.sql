@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS hpd_complaints (
     status                         TEXT,
     descriptor                     TEXT,   -- ENTIRE BUILDING | APARTMENT ONLY
     incident_address               TEXT,
+    address_norm                   TEXT,   -- normalized by app.address
     incident_zip                   TEXT,
     community_board                TEXT,
     borough                        TEXT,

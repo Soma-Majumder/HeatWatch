@@ -10,6 +10,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 
 from .config import Settings, get_settings
+from .address import normalize_address
 from .db import connect, init_db
 
 FIELDS = [
@@ -79,7 +80,8 @@ def load(settings: Settings | None = None, conn=None, now: datetime | None = Non
             continue
         rows.append((
             r["unique_key"], r["created_date"], r.get("closed_date"), r.get("status"),
-            r.get("descriptor"), r.get("incident_address"), r.get("incident_zip"),
+            r.get("descriptor"), r.get("incident_address"), normalize_address(r.get("incident_address")),
+            r.get("incident_zip"),
             r.get("community_board"), r.get("borough"), r.get("resolution_description"),
             r.get("resolution_action_updated_date"), _num(r.get("latitude")),
             _num(r.get("longitude")), loaded_at,
@@ -87,11 +89,12 @@ def load(settings: Settings | None = None, conn=None, now: datetime | None = Non
     with conn:
         conn.executemany(
             "INSERT INTO hpd_complaints (unique_key, created_date, closed_date, status, descriptor,"
-            " incident_address, incident_zip, community_board, borough, resolution_description,"
+            " incident_address, address_norm, incident_zip, community_board, borough, resolution_description,"
             " resolution_action_updated_date, latitude, longitude, loaded_at)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
             " ON CONFLICT(unique_key) DO UPDATE SET"
             " closed_date=excluded.closed_date, status=excluded.status,"
+            " address_norm=excluded.address_norm,"
             " resolution_description=excluded.resolution_description,"
             " resolution_action_updated_date=excluded.resolution_action_updated_date,"
             " loaded_at=excluded.loaded_at",
