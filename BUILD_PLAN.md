@@ -60,8 +60,9 @@ Initial scoring, to be tuned in the backtest (section 7). These weights are star
 | Repeat-offender address | +2 |
 | Reopened ticket | +2 |
 
-Priority bands: critical ≥ 8, high 5–7, normal 2–4, low < 2.
-Hard overrides: any safety flag, or vulnerable household with no heat in heat season, is `critical` and goes straight to escalation plus the emergency-services message.
+Priority bands: critical ≥ 8, high 5–7, normal 3–4, low < 3.
+Hard overrides (always `critical`, straight to escalation): any safety flag; a vulnerable household with no heat in heat season (plus the emergency-services message); and a whole-building outage that is also a repeat-offender address or has lasted 24+ hours.
+A plain whole-building outage in heat season scores 5 and is `high`; an overnight report adds a point but does not make it critical. Thresholds were chosen from the historical score distribution (see `app/backtest.py`) and re-check after the first real tickets, since duration and vulnerability are not in the public data.
 
 Duplicate detection: normalize the address, then look for an active HPD complaint (open, created within the last N days, since some "Open" rows are stale) or an open HeatWatch ticket. Link instead of creating a competing ticket; still give the tenant their own ticket number.
 

@@ -31,10 +31,36 @@ class AddressTests(unittest.TestCase):
 
 
 class TriageTests(unittest.TestCase):
-    def test_whole_building_winter_is_high(self):
+    def test_plain_whole_building_winter_is_high(self):
         r = score_complaint(Complaint("building", "heat", JAN_EVENING, duration_hours=10))
         self.assertEqual(r.score, 5)
+        self.assertEqual((r.priority, r.override), ("high", None))
+
+    def test_band_cutoffs(self):
+        self.assertEqual([triage.band_for(s) for s in (2, 3, 4, 5, 7, 8)],
+                         ["low", "normal", "normal", "high", "high", "critical"])
+
+    def test_apartment_with_aggravators_reaches_high_not_critical(self):
+        for kw in ({"repeat_address": True}, {"duration_hours": 30}):
+            r = score_complaint(Complaint("apartment", "heat", JAN_EVENING, **kw))
+            self.assertEqual(r.score, 1 + 2 + 2, kw)
+            self.assertEqual((r.priority, r.override), ("high", None), kw)
+
+    def test_apartment_plain_winter_is_normal(self):
+        r = score_complaint(Complaint("apartment", "heat", JAN_EVENING))
+        self.assertEqual((r.score, r.priority), (3, "normal"))
+
+    def test_whole_building_with_each_aggravator_is_critical(self):
+        for kw in ({"repeat_address": True}, {"duration_hours": 24}):
+            r = score_complaint(Complaint("building", "heat", JAN_EVENING, **kw))
+            self.assertEqual((r.priority, r.override), ("critical", "whole_building_aggravated"), kw)
+        r = score_complaint(Complaint("building", "heat", JAN_3AM))
+        self.assertIsNone(r.override)      # overnight alone no longer triggers the override
         self.assertEqual(r.priority, "high")
+
+    def test_whole_building_under_24h_not_aggravated(self):
+        r = score_complaint(Complaint("building", "heat", JAN_EVENING, duration_hours=23))
+        self.assertIsNone(r.override)
 
     def test_apartment_summer_is_low(self):
         r = score_complaint(Complaint("apartment", "hot_water", JUL_NOON))
