@@ -83,7 +83,7 @@ Some cases skip the score entirely:
 | 📥 **Data loader** | Pulls the last two years of complaints from NYC Open Data into a local database | `app/loader.py` |
 | 🗄️ **Database layout** | Tables for tickets, events, escalations, address history and priors | `app/schema.sql` |
 | 🏠 **Address cleaner** | Makes "516 W 156th St." and "516 WEST 156 STREET" match | `app/address.py` |
-| 📈 **Priors and address stats** | Typical close times, duplicate rates, and which addresses keep coming back (85 so far) | `app/priors.py` |
+| 📈 **Priors and address stats** | Typical close times, duplicate rates, and which addresses keep coming back (21 so far) | `app/priors.py` |
 | ⚖️ **Scoring and overrides** | Turns a complaint into a priority with the reasons listed | `app/triage.py` |
 | 👯 **Duplicate check** | Spots an open complaint already filed at the same address | `app/duplicates.py` |
 | ⏳ **ETA lookup** | Quotes "usually resolved in about X hours, 9 in 10 within Y" | `app/eta.py` |
@@ -91,21 +91,21 @@ Some cases skip the score entirely:
 | 🎫 **Ticket store** | Creates tickets with hard-to-guess numbers, logs every step, and shows a safe public view | `app/tickets.py` |
 | 💌 **Replies and output gate** | Builds the tenant reply from fixed templates and blocks promises or claims of filing | `app/replies.py` |
 | 🔬 **Backtest** | Replays the scoring over past complaints to see how the bands behave | `app/backtest.py` |
-| 🧪 **Tests** | 61 tests covering the loader, refresh job, schema, engine, tickets and replies | `tests/` |
+| 🧪 **Tests** | 63 tests covering the loader, refresh job, schema, engine, tickets and replies | `tests/` |
 
 ### 🔍 What the backtest showed
 
 | Priority | Share of complaints | Typical time to close |
 |---|---|---|
-| 🔴 Critical | about 32% | 35 hours |
-| 🟠 High | about 50% | 44 hours |
-| 🔵 Normal | about 18% | 48 hours |
-| 🟢 Low | under 1% | 40 hours |
+| 🔴 Critical | about 16% | 34 hours |
+| 🟠 High | about 61% | 43 hours |
+| 🔵 Normal | about 22% | 47 hours |
+| 🟢 Low | about 1% | 39 hours |
 
 Two things to know:
 
 - 🏚️ The bands describe **how bad it is for the tenant**, not how fast the city closes it. Critical cases close sooner largely because many are duplicates.
-- 🔁 Most of the critical group comes from **85 repeat addresses** that account for about 40% of all complaints. The backtest counts repeats across the full two years, which overstates what would be known on the day.
+- 🔁 A **repeat-offender address** is one with 200 or more complaints in two years. That is 21 addresses, about 19% of all complaints, which works out to roughly 11 escalations a day on average. The backtest counts repeats across the full two years, which overstates what would be known on the day.
 
 ---
 

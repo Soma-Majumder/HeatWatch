@@ -115,7 +115,7 @@ class PriorsTests(unittest.TestCase):
         seed(self.conn, rows)
 
     def test_address_stats_and_backfill(self):
-        n = priors.build_address_stats(self.conn)
+        n = priors.build_address_stats(self.conn, threshold=10)
         self.assertEqual(n, 2)
         row = self.conn.execute("SELECT * FROM address_stats WHERE address_norm='1 TEST AVENUE'").fetchone()
         self.assertEqual(row["complaints_2y"], 20)
@@ -164,3 +164,21 @@ class DuplicateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RepeatRuleTests(unittest.TestCase):
+    def test_default_threshold_is_200_and_configurable(self):
+        from app.config import get_settings
+        self.assertEqual(get_settings().repeat_min, 200)
+
+    def test_threshold_decides_flag(self):
+        conn = db.connect(":memory:")
+        db.init_db(conn)
+        seed(conn, [(f"2026-01-{1 + i % 28:02d}T10:00:00", None, "ENTIRE BUILDING", "1 BUSY AVENUE", "Closed", None)
+                    for i in range(15)])
+        priors.build_address_stats(conn, threshold=15)
+        self.assertEqual(conn.execute("select repeat_flag from address_stats").fetchone()[0], 1)
+        priors.build_address_stats(conn, threshold=16)
+        self.assertEqual(conn.execute("select repeat_flag from address_stats").fetchone()[0], 0)
+        priors.build_address_stats(conn)   # default 200
+        self.assertEqual(conn.execute("select repeat_flag from address_stats").fetchone()[0], 0)

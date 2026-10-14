@@ -16,6 +16,9 @@ class Settings:
     window_days: int = int(os.environ.get("HEATWATCH_WINDOW_DAYS", "730"))  # rolling 2 years
     page_size: int = int(os.environ.get("HEATWATCH_PAGE_SIZE", "50000"))
     app_token: str | None = os.environ.get("SOCRATA_APP_TOKEN")
+    # An address with at least this many complaints over the window is a repeat offender.
+    # 200 flags about 21 addresses (19% of complaints, ~11 escalations a day on average).
+    repeat_min: int = int(os.environ.get("HEATWATCH_REPEAT_MIN", "200"))
     # Plan decision 4 (default): 90-day retention for tenant-submitted data
     retention_days: int = int(os.environ.get("HEATWATCH_RETENTION_DAYS", "90"))
 
