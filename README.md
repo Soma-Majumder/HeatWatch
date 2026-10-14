@@ -144,6 +144,8 @@ python3 -m unittest discover -s tests
 
 The database is saved to `data/heatwatch.db` and is not committed to git.
 
+✔️ **Tests run automatically** on every pull request and on pushes to `main` (GitHub Actions, Python 3.10 and 3.13). The workflow is in `.github/workflows/tests.yml`.
+
 ---
 
 ## 📁 What's in this repo
