@@ -14,6 +14,15 @@ class LLMError(Exception):
     pass
 
 
+def _api_error_detail(exc: urllib.error.HTTPError) -> str:
+    """The API's own error type and message. Never includes request headers (the key)."""
+    try:
+        err = json.loads(exc.read().decode("utf-8", "replace")).get("error", {})
+        return f"{err.get('type', 'error')}: {err.get('message', '')}".strip()
+    except Exception:
+        return ""
+
+
 class AnthropicClient:
     def __init__(self, api_key: str | None = None, model: str | None = None,
                  max_tokens: int = 600, timeout: int = 30, tries: int = 2):
@@ -29,6 +38,7 @@ class AnthropicClient:
         headers = {"content-type": "application/json", "x-api-key": self.api_key,
                    "anthropic-version": API_VERSION}
         last: Exception | None = None
+        detail = ""
         for attempt in range(self.tries):
             try:
                 req = urllib.request.Request(API_URL, data=body, headers=headers, method="POST")
@@ -37,11 +47,14 @@ class AnthropicClient:
                 return "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text")
             except urllib.error.HTTPError as exc:
                 last = exc
+                detail = _api_error_detail(exc)
                 if exc.code not in (429, 500, 502, 503, 529):
                     break
             except (urllib.error.URLError, TimeoutError) as exc:
                 last = exc
             time.sleep(1.5 * (attempt + 1))
+        if isinstance(last, urllib.error.HTTPError):
+            raise LLMError(f"model request failed: HTTP {last.code} {detail}")
         raise LLMError(f"model request failed: {type(last).__name__}")
 
 

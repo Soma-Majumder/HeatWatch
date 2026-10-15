@@ -82,6 +82,14 @@ class AgentTests(unittest.TestCase):
         r = s.step("no heat")
         self.assertFalse(r.done)
         self.assertIn("building number", r.message)
+        self.assertIn("LLMError", s.last_error)
+
+    def test_last_error_clears_after_a_good_turn(self):
+        s, _ = session(["not json", reply({"address": "1 Quiet St"}, "Whole building?")])
+        s.step("hi")
+        self.assertIn("ValueError", s.last_error)
+        s.step("1 Quiet St")
+        self.assertIsNone(s.last_error)
 
     def test_gas_smell_forces_emergency_even_if_model_misses_it(self):
         s, _ = session([

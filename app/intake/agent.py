@@ -44,6 +44,7 @@ class IntakeSession:
     description: str = ""
     bad_replies: int = 0
     emergency_shown: bool = False
+    last_error: str | None = None       # why the last model turn was unusable; for debugging only
 
     def start(self) -> str:
         return GREETING
@@ -74,13 +75,15 @@ class IntakeSession:
         try:
             raw = self.llm.complete(SYSTEM_PROMPT, self.history)
             data = self._parse(raw)
-        except (LLMError, ValueError):
+        except (LLMError, ValueError) as exc:
+            self.last_error = f"{type(exc).__name__}: {exc}"
             self.history.pop()
             self.bad_replies += 1
             if self.bad_replies >= 3:
                 return TurnResult(GIVE_UP, done=True, gave_up=True)
             return TurnResult(self._prefix(newly_unsafe, self._ask(None)))
         self.bad_replies = 0
+        self.last_error = None
         self.history.append({"role": "assistant", "content": raw})
         self._merge(validate_fields(data.get("fields")))
 

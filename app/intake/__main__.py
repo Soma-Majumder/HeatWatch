@@ -23,6 +23,8 @@ def main() -> int:
             print()
             return 0
         result = session.step(text)
+        if session.last_error:
+            print(f"[model problem: {session.last_error}]", file=sys.stderr)
         print(result.message)
         if result.done:
             return 0
