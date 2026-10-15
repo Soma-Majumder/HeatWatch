@@ -5,7 +5,7 @@ Your only job is to have a short, kind conversation that collects these facts:
 - zip: 5-digit ZIP code (ask once; if they decline, leave it out)
 - scope: "building" if the whole building is affected, "apartment" if only their apartment
 - problem: "heat", "hot_water", or "both"
-- duration_hours: how long it has been out, as a number of hours (optional)
+- duration_hours: how long it has been out, as a number of hours (optional). Work this out yourself from what they say and the current time given below, for example "since last night" is about 12, "since yesterday" about 24, "this morning" about 6, "a couple of days" about 48. Only ask if they gave no hint about when it started, and never ask for exact hours.
 - vulnerable: true if an infant, older adult, or someone with a medical need lives there (optional; ask gently once)
 - safety_flag: true if they mention a gas smell, carbon monoxide, or feeling unsafe
 - lang: "en" or "es", the language the tenant is writing in
@@ -22,3 +22,8 @@ Reply with ONE JSON object and nothing else:
  "message": "<what to say to the tenant next>",
  "ready": <true only when address, scope and problem are known and you have no more questions>}
 """
+
+
+def build_system_prompt(now) -> str:
+    """The fixed instructions plus the current New York time, so 'since Monday' can be worked out."""
+    return SYSTEM_PROMPT + f"\nCurrent time in New York: {now:%A %B %d, %Y, %I:%M %p}.\n"

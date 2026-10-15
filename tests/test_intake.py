@@ -149,6 +149,14 @@ class AgentTests(unittest.TestCase):
         self.assertNotIn("\x00", sent)
         self.assertLessEqual(len(sent), MAX_CHARS)
 
+    def test_prompt_gives_time_and_duration_guidance(self):
+        s, llm = session([reply({}, "ok")])
+        s.step("no heat since last night")
+        system = llm.calls[0]["system"]
+        self.assertIn("Current time in New York: Thursday January 15, 2026, 07:00 PM", system)
+        self.assertIn('"since last night" is about 12', system)
+        self.assertIn("never ask for exact hours", system)
+
     def test_empty_message_asks_again_without_calling_model(self):
         s, llm = session([])
         r = s.step("   ")

@@ -8,7 +8,7 @@ from ..replies import EMERGENCY, build_out_of_area_reply, build_reply, check_rep
 from ..tickets import create_ticket
 from .guard import detect_safety, sanitize_text, validate_fields
 from .llm import LLMError
-from .prompt import SYSTEM_PROMPT
+from .prompt import build_system_prompt
 
 REQUIRED = ("address", "scope", "problem")
 SOFT_TURN_CAP = 6        # after this many turns, stop asking optional questions
@@ -73,7 +73,7 @@ class IntakeSession:
 
         self.history.append({"role": "user", "content": text})
         try:
-            raw = self.llm.complete(SYSTEM_PROMPT, self.history)
+            raw = self.llm.complete(build_system_prompt(self.now_fn()), self.history)
             data = self._parse(raw)
         except (LLMError, ValueError) as exc:
             self.last_error = f"{type(exc).__name__}: {exc}"
