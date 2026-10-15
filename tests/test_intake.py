@@ -54,6 +54,13 @@ class DurationGuardTests(unittest.TestCase):
                   "for 1.5 hours", "since 2 days ago"):
             self.assertTrue(has_explicit_duration(t), t)
 
+    def test_unsure(self):
+        from app.intake.guard import is_unsure
+        for t in ("I'm not sure", "i don't know", "no idea", "dunno", "can't say"):
+            self.assertTrue(is_unsure(t), t)
+        for t in ("about 10 hours", "since last night", ""):
+            self.assertFalse(is_unsure(t), t)
+
     def test_vague(self):
         for t in ("since last night", "since yesterday", "this morning", "a while", "for a bit",
                   "a couple of days", "all day", ""):
@@ -79,7 +86,8 @@ class AgentTests(unittest.TestCase):
     def test_asks_fixed_question_when_model_message_is_bad(self):
         s, _ = session([reply({"problem": "heat"}, "We have filed your complaint with HPD.")])
         r = s.step("no heat")
-        self.assertEqual(r.message, "What is the building number and street where the problem is?")
+        self.assertIn("building number and street", r.message)
+        self.assertNotIn("filed", r.message)
 
     def test_invalid_json_reasks_then_gives_up(self):
         s, _ = session(["not json", "{broken", "still nothing"])
@@ -143,7 +151,8 @@ class AgentTests(unittest.TestCase):
 
     def test_soft_turn_cap_finishes_when_required_fields_known(self):
         replies = [reply({"address": "1 Quiet St", "scope": "apartment", "problem": "heat"}, "Anything else?")
-                   for _ in range(7)]
+                   for _ in range(6)]
+        replies.append(reply({"duration_hours": 8}, "Thanks.", ready=True))
         s, _ = session(replies)
         results = [s.step("more") for _ in range(6)]
         self.assertFalse(any(r.done for r in results))
@@ -186,13 +195,25 @@ class AgentTests(unittest.TestCase):
         self.assertEqual(s.fields["duration_hours"], 18.0)
         self.assertIn(r2.ticket_id, r2.message)
 
-    def test_hours_are_asked_only_once(self):
+    def test_repeats_the_hours_question_with_specific_wording_then_stops(self):
+        s, _ = session([
+            reply({"address": "1 Quiet St", "scope": "apartment", "problem": "heat"}, "ok", ready=True),
+            reply({}, "ok", ready=True), reply({}, "ok", ready=True)])
+        r1 = s.step("no heat at 1 Quiet St since last night")
+        self.assertIn("About how many hours", r1.message)
+        r2 = s.step("since yesterday evening")                     # still vague
+        self.assertEqual(r2.message, "Can you tell me specifically how many hours has the heat or hot water been out?")
+        r3 = s.step("a long time")                                 # asked twice already: carry on
+        self.assertTrue(r3.done)
+        self.assertNotIn("duration_hours", s.fields)
+
+    def test_unsure_answer_stops_the_hours_questions(self):
         s, _ = session([
             reply({"address": "1 Quiet St", "scope": "apartment", "problem": "heat"}, "ok", ready=True),
             reply({}, "ok", ready=True)])
-        self.assertIn("how many hours", s.step("no heat at 1 Quiet St").message)
-        r = s.step("not sure, since last night")
-        self.assertTrue(r.done)                                    # does not ask again
+        self.assertIn("About how many hours", s.step("no heat at 1 Quiet St").message)
+        r = s.step("I'm not sure, since last night")
+        self.assertTrue(r.done)                                    # no second ask
         self.assertNotIn("duration_hours", s.fields)
 
     def test_explicit_duration_is_accepted_without_asking(self):
@@ -209,6 +230,17 @@ class AgentTests(unittest.TestCase):
         s, _ = session([reply({"address": "5 Main St", "scope": "building", "problem": "heat",
                                "zip": "11101"}, "ok", ready=True)])
         self.assertTrue(s.step("no heat at 5 Main St 11101").done)
+
+    def test_tone_rule_and_warm_fixed_text(self):
+        from app.intake.agent import DURATION_QUESTION, FALLBACK_QUESTION, GIVE_UP, GREETING
+        s, llm = session([reply({}, "ok")])
+        s.step("no heat")
+        self.assertIn("Tone: be warm, friendly", llm.calls[0]["system"])
+        self.assertIn("acknowledge the person's frustration first, then explain", llm.calls[0]["system"])
+        self.assertIn("here to help", GREETING)
+        self.assertIn("frustrating", GIVE_UP)
+        self.assertTrue(DURATION_QUESTION.startswith("Thanks"))
+        self.assertTrue(all(q.startswith(("Thank", "Could")) for q in FALLBACK_QUESTION.values()))
 
     def test_empty_message_asks_again_without_calling_model(self):
         s, llm = session([])

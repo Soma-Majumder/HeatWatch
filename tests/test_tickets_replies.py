@@ -153,6 +153,16 @@ class ReplyTests(unittest.TestCase):
         _, a, t = make(conn)
         self.assertIn("already an open HeatWatch ticket", build_reply(a, t.id))
 
+    def test_acknowledges_frustration_before_explaining_policy(self):
+        conn = seeded()
+        _, a, t = make(conn)
+        text = build_reply(a, t.id, scope="building")
+        self.assertTrue(text.startswith("I'm really sorry you're dealing with this"))
+        self.assertLess(text.index("frustrating"), text.index("does not file complaints with the city"))
+        out = build_out_of_area_reply()
+        self.assertLess(out.index("I'm sorry"), out.index("cannot create a ticket"))
+        self.assertLess(out.index("frustrating"), out.index("does not file"))
+
     def test_out_of_area_reply(self):
         text = build_out_of_area_reply()
         self.assertIn("Washington Heights and Inwood", text)

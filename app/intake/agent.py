@@ -7,24 +7,26 @@ from ..engine import Assessment, Intake, IntakeError, assess
 from ..replies import EMERGENCY, build_out_of_area_reply, build_reply, check_reply
 from ..tickets import create_ticket
 from ..engine import IN_SCOPE_ZIPS
-from .guard import detect_safety, has_explicit_duration, sanitize_text, validate_fields
+from .guard import detect_safety, has_explicit_duration, is_unsure, sanitize_text, validate_fields
 from .llm import LLMError
 from .prompt import build_system_prompt
 
 REQUIRED = ("address", "scope", "problem")
 SOFT_TURN_CAP = 6        # after this many turns, stop asking optional questions
 HARD_TURN_CAP = 12       # after this many, hand the tenant to 311
-GREETING = ("Hi, I'm the HeatWatch assistant. Tell me what is happening and the address "
-            "where the heat or hot water is out.")
+GREETING = ("Hi, I'm the HeatWatch assistant, and I'm here to help. Tell me what's happening and "
+            "the address where the heat or hot water is out.")
 FALLBACK_QUESTION = {
-    "address": "What is the building number and street where the problem is?",
-    "scope": "Is the whole building affected, or only your apartment?",
-    "problem": "Is it heat, hot water, or both?",
+    "address": "Thanks for bearing with me. Could you tell me the building number and street where the problem is?",
+    "scope": "Thank you. Is the whole building affected, or only your apartment?",
+    "problem": "Thank you. Is it heat, hot water, or both?",
 }
-DURATION_QUESTION = ("About how many hours has the heat or hot water been out? "
-                     "A rough number is fine, and you can say you are not sure.")
-GIVE_UP = ("I'm sorry, I couldn't finish taking your report. Please call 311 so the city has your "
-           "complaint, and call 911 right away if there is any danger.")
+DURATION_QUESTION = ("Thanks, that helps. About how many hours has the heat or hot water been out? "
+                     "A rough number is fine, and it's okay to say you're not sure.")
+DURATION_FOLLOWUP = "Can you tell me specifically how many hours has the heat or hot water been out?"
+MAX_DURATION_ASKS = 2
+GIVE_UP = ("I'm so sorry, I wasn't able to finish taking your report, and I know that's frustrating. "
+           "Please call 311 so the city has your complaint, and call 911 right away if there is any danger.")
 
 
 @dataclass
@@ -47,7 +49,8 @@ class IntakeSession:
     description: str = ""
     bad_replies: int = 0
     emergency_shown: bool = False
-    duration_asked: bool = False
+    duration_asks: int = 0
+    last_text: str = ""
     last_error: str | None = None       # why the last model turn was unusable; for debugging only
 
     def start(self) -> str:
@@ -70,6 +73,7 @@ class IntakeSession:
         if self.turns > HARD_TURN_CAP:
             return TurnResult(GIVE_UP, done=True, gave_up=True)
 
+        self.last_text = text
         self.description = (self.description + " " + text).strip()[:1000]
         newly_unsafe = detect_safety(text) and not self.fields.get("safety_flag")
         if newly_unsafe:
@@ -98,14 +102,18 @@ class IntakeSession:
             return TurnResult(self._prefix(newly_unsafe, self._ask(data.get("message"))))
         if data.get("ready") is True or self.turns >= SOFT_TURN_CAP:
             if self._needs_duration():
-                self.duration_asked = True
-                return TurnResult(self._prefix(newly_unsafe, DURATION_QUESTION))
+                question = DURATION_QUESTION if self.duration_asks == 0 else DURATION_FOLLOWUP
+                self.duration_asks += 1
+                return TurnResult(self._prefix(newly_unsafe, question))
             return self._finalize()
         return TurnResult(self._prefix(newly_unsafe, self._ask(data.get("message"))))
 
     def _needs_duration(self) -> bool:
-        """Ask for hours once, unless it is an emergency or an out-of-area address."""
-        if "duration_hours" in self.fields or self.duration_asked:
+        """Ask for hours, and once more if the answer was still vague, unless it is an emergency,
+        an out-of-area address, or the tenant says they are not sure."""
+        if "duration_hours" in self.fields or self.duration_asks >= MAX_DURATION_ASKS:
+            return False
+        if self.duration_asks >= 1 and is_unsure(self.last_text):
             return False
         if self.fields.get("safety_flag"):
             return False

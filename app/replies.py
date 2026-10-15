@@ -9,10 +9,12 @@ from datetime import datetime
 
 from .engine import Assessment
 
-DISCLAIMER = ("HeatWatch does not file complaints with the city. If you have not already done so, "
-              "please also report this to 311 (call 311 or visit nyc.gov/311) so there is an official record.")
-EMERGENCY = ("If you smell gas, feel unsafe, or anyone is unwell, leave the area if needed and call 911 now. "
-             "Do not wait for a reply here.")
+# Warm first, then the policy: acknowledge how frustrating this is before explaining the limit.
+DISCLAIMER = ("I know how frustrating it is to wait on a repair, so I want to be upfront: HeatWatch does not "
+              "file complaints with the city. If you have not already done so, please also report this to "
+              "311 (call 311 or visit nyc.gov/311) so there is an official record.")
+EMERGENCY = ("Your safety comes first. If you smell gas, feel unsafe, or anyone is unwell, leave the area "
+             "if needed and call 911 now. Do not wait for a reply here.")
 
 PRIORITY_LINE = {
     "critical": "We have marked this as urgent, and a person has been asked to review it.",
@@ -73,7 +75,8 @@ def build_reply(assessment: Assessment, ticket_id: str, safety_flag: bool = Fals
     if not assessment.in_scope or assessment.priority is None:
         raise ValueError("use build_out_of_area_reply for out-of-area complaints")
     emergency = safety_flag or assessment.override == "safety_risk"
-    parts = [f"Thank you. Your ticket number is {ticket_id}. Keep it to check progress later."]
+    parts = [f"I'm really sorry you're dealing with this, and thank you for reporting it. "
+             f"Your ticket number is {ticket_id}. Keep it to check progress later."]
     if emergency:
         parts.append(EMERGENCY)
     parts.append(PRIORITY_LINE[assessment.priority])
@@ -99,6 +102,7 @@ def build_reply(assessment: Assessment, ticket_id: str, safety_flag: bool = Fals
 
 
 def build_out_of_area_reply() -> str:
-    text = ("HeatWatch currently covers Washington Heights and Inwood only, so we cannot create a ticket "
-            "for this address. " + DISCLAIMER)
+    text = ("I'm sorry, I can tell this matters to you, and I wish I could do more from here. HeatWatch "
+            "currently covers Washington Heights and Inwood only, so we cannot create a ticket for this "
+            "address. " + DISCLAIMER)
     return gate(text, None)
