@@ -6,7 +6,8 @@ from datetime import datetime
 from ..engine import Assessment, Intake, IntakeError, assess
 from ..replies import EMERGENCY, build_out_of_area_reply, build_reply, check_reply
 from ..tickets import create_ticket
-from .guard import detect_safety, sanitize_text, validate_fields
+from ..engine import IN_SCOPE_ZIPS
+from .guard import detect_safety, has_explicit_duration, sanitize_text, validate_fields
 from .llm import LLMError
 from .prompt import build_system_prompt
 
@@ -20,6 +21,8 @@ FALLBACK_QUESTION = {
     "scope": "Is the whole building affected, or only your apartment?",
     "problem": "Is it heat, hot water, or both?",
 }
+DURATION_QUESTION = ("About how many hours has the heat or hot water been out? "
+                     "A rough number is fine, and you can say you are not sure.")
 GIVE_UP = ("I'm sorry, I couldn't finish taking your report. Please call 311 so the city has your "
            "complaint, and call 911 right away if there is any danger.")
 
@@ -44,6 +47,7 @@ class IntakeSession:
     description: str = ""
     bad_replies: int = 0
     emergency_shown: bool = False
+    duration_asked: bool = False
     last_error: str | None = None       # why the last model turn was unusable; for debugging only
 
     def start(self) -> str:
@@ -85,13 +89,28 @@ class IntakeSession:
         self.bad_replies = 0
         self.last_error = None
         self.history.append({"role": "assistant", "content": raw})
-        self._merge(validate_fields(data.get("fields")))
+        new = validate_fields(data.get("fields"))
+        if "duration_hours" in new and not has_explicit_duration(self.description):
+            del new["duration_hours"]          # the tenant did not say it; do not accept a guess
+        self._merge(new)
 
         if self._missing():
             return TurnResult(self._prefix(newly_unsafe, self._ask(data.get("message"))))
         if data.get("ready") is True or self.turns >= SOFT_TURN_CAP:
+            if self._needs_duration():
+                self.duration_asked = True
+                return TurnResult(self._prefix(newly_unsafe, DURATION_QUESTION))
             return self._finalize()
         return TurnResult(self._prefix(newly_unsafe, self._ask(data.get("message"))))
+
+    def _needs_duration(self) -> bool:
+        """Ask for hours once, unless it is an emergency or an out-of-area address."""
+        if "duration_hours" in self.fields or self.duration_asked:
+            return False
+        if self.fields.get("safety_flag"):
+            return False
+        z = self.fields.get("zip")
+        return not (z and z not in IN_SCOPE_ZIPS)
 
     @staticmethod
     def _parse(raw: str) -> dict:

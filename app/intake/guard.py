@@ -30,6 +30,21 @@ def detect_safety(text: str) -> bool:
     return bool(_SAFETY.search(text or ""))
 
 
+_NUM_WORDS = (r"one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|"
+              r"thirty|forty|forty-eight|an?|half\s+a")
+_UNITS = r"(?:hours?|hrs?|h|days?|weeks?)"
+_EXPLICIT_DURATION = re.compile(
+    rf"(?:\b\d+(?:\.\d+)?\s*{_UNITS}\b|\b(?:{_NUM_WORDS})\s+{_UNITS}\b)", re.I)
+
+
+def has_explicit_duration(text: str) -> bool:
+    """True only if the tenant gave a number plus a unit, like '10 hours' or 'two days'.
+
+    Vague phrases ('since last night', 'yesterday') do not count, so the agent asks.
+    """
+    return bool(_EXPLICIT_DURATION.search(text or ""))
+
+
 def validate_fields(raw) -> dict:
     """Keep only known fields with valid values. Everything else is dropped silently."""
     if not isinstance(raw, dict):
