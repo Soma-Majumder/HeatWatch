@@ -25,6 +25,17 @@ DURATION_QUESTION = ("Thanks, that helps. About how many hours has the heat or h
                      "A rough number is fine, and it's okay to say you're not sure.")
 DURATION_FOLLOWUP = "Can you tell me specifically how many hours has the heat or hot water been out?"
 MAX_DURATION_ASKS = 2
+OFF_TOPIC_REPLY = ("That's a thoughtful question, and I appreciate you asking. I'm only able to help "
+                   "with heat and hot water problems, so I can't answer that one. If your heat or hot "
+                   "water is out, I'm happy to help with that.")
+NEXT_QUESTION = {
+    "address": "What is the building number and street where the problem is?",
+    "scope": "Is the whole building affected, or only your apartment?",
+    "problem": "Is it heat, hot water, or both?",
+}
+OFF_TOPIC_LIMIT = 3
+OFF_TOPIC_GOODBYE = ("I'm only able to help with heat and hot water problems, so I'll leave it here. "
+                     "If you need help with something else, calling 311 is a good place to start. Take care!")
 GIVE_UP = ("I'm so sorry, I wasn't able to finish taking your report, and I know that's frustrating. "
            "Please call 311 so the city has your complaint, and call 911 right away if there is any danger.")
 
@@ -50,6 +61,7 @@ class IntakeSession:
     bad_replies: int = 0
     emergency_shown: bool = False
     duration_asks: int = 0
+    off_topic_count: int = 0
     last_text: str = ""
     last_error: str | None = None       # why the last model turn was unusable; for debugging only
 
@@ -74,6 +86,7 @@ class IntakeSession:
             return TurnResult(GIVE_UP, done=True, gave_up=True)
 
         self.last_text = text
+        previous_description = self.description
         self.description = (self.description + " " + text).strip()[:1000]
         newly_unsafe = detect_safety(text) and not self.fields.get("safety_flag")
         if newly_unsafe:
@@ -93,6 +106,8 @@ class IntakeSession:
         self.bad_replies = 0
         self.last_error = None
         self.history.append({"role": "assistant", "content": raw})
+        if data.get("off_topic") is True:
+            return self._off_topic(previous_description, newly_unsafe)
         new = validate_fields(data.get("fields"))
         if "duration_hours" in new and not has_explicit_duration(self.description):
             del new["duration_hours"]          # the tenant did not say it; do not accept a guess
@@ -107,6 +122,20 @@ class IntakeSession:
                 return TurnResult(self._prefix(newly_unsafe, question))
             return self._finalize()
         return TurnResult(self._prefix(newly_unsafe, self._ask(data.get("message"))))
+
+    def _off_topic(self, previous_description: str, unsafe: bool) -> TurnResult:
+        """Unrelated question: acknowledge, explain the scope, redirect. Never answer it.
+
+        The reply is a fixed template, so a model that tried to answer cannot get its answer through.
+        The off-topic text is kept out of the ticket description, and the model's fields are ignored.
+        """
+        self.description = previous_description
+        self.off_topic_count += 1
+        if self.off_topic_count >= OFF_TOPIC_LIMIT:
+            return TurnResult(OFF_TOPIC_GOODBYE, done=True, gave_up=True)
+        missing = self._missing()
+        nxt = NEXT_QUESTION[missing[0]] if missing else "Is there anything else about your heat or hot water you'd like to add?"
+        return TurnResult(self._prefix(unsafe, OFF_TOPIC_REPLY + " " + nxt))
 
     def _needs_duration(self) -> bool:
         """Ask for hours, and once more if the answer was still vague, unless it is an emergency,

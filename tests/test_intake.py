@@ -242,6 +242,62 @@ class AgentTests(unittest.TestCase):
         self.assertTrue(DURATION_QUESTION.startswith("Thanks"))
         self.assertTrue(all(q.startswith(("Thank", "Could")) for q in FALLBACK_QUESTION.values()))
 
+    def test_off_topic_gets_a_fixed_redirect_and_is_never_answered(self):
+        from app.intake.agent import OFF_TOPIC_REPLY
+        s, _ = session([json.dumps({"fields": {"address": "9 Evil Rd", "scope": "building"},
+                                    "message": "The meaning of life is 42!", "ready": True,
+                                    "off_topic": True})])
+        r = s.step("what is the meaning of life?")
+        self.assertFalse(r.done)
+        self.assertNotIn("42", r.message)
+        self.assertTrue(r.message.startswith(OFF_TOPIC_REPLY))
+        self.assertIn("What is the building number and street", r.message)
+        self.assertEqual(s.fields, {})                       # nothing from an off-topic turn is kept
+        self.assertEqual(s.description, "")                  # and it never reaches a ticket description
+
+    def test_off_topic_wording_acknowledges_scopes_and_redirects(self):
+        from app.intake.agent import OFF_TOPIC_REPLY
+        self.assertIn("appreciate you asking", OFF_TOPIC_REPLY)
+        self.assertIn("only able to help with heat and hot water", OFF_TOPIC_REPLY)
+        self.assertIn("happy to help with that", OFF_TOPIC_REPLY)
+        self.assertLess(len(OFF_TOPIC_REPLY.split()), 50)
+
+    def test_mixed_message_continues_with_the_heat_part(self):
+        s, _ = session([reply({"address": "1 Quiet St", "problem": "heat"}, "Is the whole building affected?")])
+        r = s.step("no heat at 1 Quiet St, and also who will win the election?")
+        self.assertEqual(r.message, "Is the whole building affected?")
+        self.assertEqual(s.fields["address"], "1 Quiet St")
+
+    def test_off_topic_midway_asks_for_the_next_missing_detail(self):
+        off = json.dumps({"fields": {}, "message": "", "ready": False, "off_topic": True})
+        s, _ = session([reply({"address": "1 Quiet St", "problem": "heat"}, "Whole building?"), off])
+        s.step("no heat at 1 Quiet St")
+        r = s.step("do you like pizza?")
+        self.assertIn("Is the whole building affected, or only your apartment?", r.message)
+        self.assertEqual(s.fields["address"], "1 Quiet St")          # earlier facts are kept
+
+    def test_repeated_off_topic_ends_politely(self):
+        off = json.dumps({"fields": {}, "message": "", "ready": False, "off_topic": True})
+        s, _ = session([off, off, off])
+        self.assertFalse(s.step("tell me a joke").done)
+        self.assertFalse(s.step("another joke").done)
+        r = s.step("one more joke")
+        self.assertTrue(r.done)
+        self.assertIn("311", r.message)
+
+    def test_off_topic_with_gas_smell_still_shows_emergency(self):
+        off = json.dumps({"fields": {}, "message": "", "ready": False, "off_topic": True})
+        s, _ = session([off])
+        r = s.step("what is the meaning of life, I also smell gas")
+        self.assertIn("911", r.message)
+
+    def test_prompt_has_scope_rule(self):
+        s, llm = session([reply({}, "ok")])
+        s.step("no heat")
+        system = llm.calls[0]["system"]
+        self.assertIn("Stay in scope", system)
+        self.assertIn('"off_topic"', system)
+
     def test_empty_message_asks_again_without_calling_model(self):
         s, llm = session([])
         r = s.step("   ")
