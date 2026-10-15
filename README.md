@@ -3,7 +3,7 @@
 **An AI triage agent for NYC heat and hot water complaints.**
 HeatWatch takes a complaint, works out how urgent it is, tells the tenant what happens next, and lets them follow their ticket by number.
 
-> 🧭 **Where we are:** the *decision engine* is built and tested. The chat agent, tickets and reviewer screens are the next phases.
+> 🧭 **Where we are:** the *decision engine*, tickets, replies and a first *intake conversation* are built and tested. The reviewer screens and ticket pages are the next phases.
 
 ---
 
@@ -27,7 +27,7 @@ HeatWatch follows a simple loop:
 
 | Step | What happens | Status |
 |---|---|---|
-| 👀 **Observe** | Collect the complaint and look up the address history | 🚧 history lookup built, chat not yet |
+| 👀 **Observe** | Collect the complaint and look up the address history | ✅ built (intake chat needs a model key to run live) |
 | 🧠 **Decide** | Score how urgent it is and check for duplicates | ✅ built |
 | 📣 **Act** | Reply with a ticket number, a next step and an expected timeline | ⏳ not yet |
 | 📝 **Feedback** | Save the ticket and let the tenant check progress | ⏳ not yet |
@@ -90,8 +90,9 @@ Some cases skip the score entirely:
 | 🧩 **One-call engine** | Takes a complaint and returns priority, reasons, duplicate, ETA and whether to escalate, all in one call | `app/engine.py` |
 | 🎫 **Ticket store** | Creates tickets with hard-to-guess numbers, logs every step, and shows a safe public view | `app/tickets.py` |
 | 💌 **Replies and output gate** | Builds the tenant reply from fixed templates and blocks promises or claims of filing | `app/replies.py` |
+| 💬 **Intake agent** | A short conversation that collects address, building or apartment, heat or hot water, and how long. The model only asks and extracts; code checks every field and creates the ticket. | `app/intake/` |
 | 🔬 **Backtest** | Replays the scoring over past complaints to see how the bands behave | `app/backtest.py` |
-| 🧪 **Tests** | 63 tests covering the loader, refresh job, schema, engine, tickets and replies | `tests/` |
+| 🧪 **Tests** | 80 tests covering the loader, refresh job, schema, engine, tickets, replies and intake | `tests/` |
 
 ### 🔍 What the backtest showed
 
@@ -111,7 +112,7 @@ Two things to know:
 
 ## 🚧 What is not built yet
 
-- 💬 The chat that collects a complaint (and Spanish support)
+- 🌎 Spanish support for replies (the intake chat can already follow a Spanish speaker)
 - 🖥️ A page or chat for ticket lookup and follow-ups (the data layer exists)
 - 👩‍💼 The reviewer queue and escalation alerts
 - 🔄 Automatic re-check of late and repeated tickets
@@ -142,6 +143,15 @@ python3 -m unittest discover -s tests
 ```
 
 The database is saved to `data/heatwatch.db` and is not committed to git.
+
+### 💬 Try the intake chat
+
+```bash
+export ANTHROPIC_API_KEY=...   # your own key; never commit it
+python3 -m app.intake
+```
+
+It talks to a model, collects the details, and prints the ticket reply. Tickets are written to your local database.
 
 ### 🔄 Keep the data fresh
 
@@ -175,6 +185,7 @@ HeatWatch/
 │   ├── eta.py              expected timeline
 │   ├── engine.py           one call: complaint in, full assessment out
 │   ├── tickets.py          ticket store and public view
+│   ├── intake/             the intake conversation (guard, prompt, model client, agent)
 │   ├── replies.py          reply templates and output gate
 │   └── backtest.py         checks the bands against history
 ├── tests/                  unit tests

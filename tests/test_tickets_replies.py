@@ -124,6 +124,15 @@ class ReplyTests(unittest.TestCase):
         self.assertIn("estimate based on past complaints", text)
         self.assertNotIn("911", text)
 
+    def test_reply_does_not_imply_heatwatch_will_phone_the_tenant(self):
+        conn = seeded()
+        _, a, t = make(conn, safety_flag=False, scope="building", duration_hours=30)
+        text = build_reply(a, t.id, scope="building")
+        self.assertNotIn("be reachable by phone", text)
+        self.assertIn("if you report this to 311, give them a phone number", text)
+        self.assertIn("come back with your ticket number", text)
+        self.assertIn("will review it. Please keep your ticket number", text)
+
     def test_safety_reply_leads_with_emergency(self):
         conn = seeded()
         intake, a, t = make(conn, scope="apartment", safety_flag=True)

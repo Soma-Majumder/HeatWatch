@@ -85,13 +85,15 @@ def build_reply(assessment: Assessment, ticket_id: str, safety_flag: bool = Fals
         parts.append(dup)
     if assessment.eta:
         parts.append(assessment.eta.text + " This is an estimate based on past complaints.")
-    parts.append("What to do next: be reachable by phone, and let the inspector or building staff in "
-                 "if the city comes to check. Many complaints stall when no one can be reached.")
+    parts.append("What to do next: if you report this to 311, give them a phone number where you can be "
+                 "reached, and let the inspector or building staff in if the city comes to check. "
+                 "Many complaints stall when no one can be reached. You can come back with your ticket "
+                 "number to see how your ticket is progressing.")
     if scope == "apartment":
         parts.append("If neighbors also have no heat, ask them to report too. "
                      "Whole-building problems are treated with higher priority.")
     if assessment.escalate:
-        parts.append("A person at HeatWatch will take a look at your ticket.")
+        parts.append("A person at HeatWatch will review it. Please keep your ticket number to check its status.")
     parts.append(DISCLAIMER)
     return gate(" ".join(parts), ticket_id, needs_emergency=emergency)
 

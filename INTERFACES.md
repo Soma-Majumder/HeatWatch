@@ -76,6 +76,16 @@ Defined in `app/engine.py`. Pure read; writes nothing.
 
 The gate blocks: claiming to have filed or reported anything, guarantees and promises, promising a repair. It requires the ticket number, the "we do not file with the city" notice, and the 911 line when there is a safety risk.
 
+## 4b. Intake agent (`app/intake/`)
+
+| Piece | What it does |
+|---|---|
+| `IntakeSession(llm, conn).step(text)` | One tenant turn. Returns `TurnResult(message, done, ticket_id, assessment, gave_up)`. |
+| `guard.sanitize_text`, `guard.validate_fields`, `guard.detect_safety` | Cleaning and field validation (issue #15 owns hardening these) |
+| `AnthropicClient` / `ScriptedClient` | The real model client, and a scripted one for tests |
+
+The model returns JSON `{fields, message, ready}`. The harness keeps only validated known fields, decides when the intake is complete, and creates the ticket itself.
+
 ## 5. Rules that must hold
 
 1. **The model never writes tickets or escalations.** Only harness code calls `create_ticket`, `add_event` and `reopen`.
