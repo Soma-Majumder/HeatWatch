@@ -3,8 +3,8 @@ from datetime import datetime
 
 from app import duplicates, priors
 from app.engine import Intake, assess
-from app.replies import (DISCLAIMER, ReplyViolation, build_out_of_area_reply, build_reply,
-                         check_reply, gate)
+from app.replies import (DISCLAIMER, DISCLAIMER_ES, ReplyViolation, build_out_of_area_reply,
+                         build_reply, check_reply, gate)
 from app.tickets import (TicketError, add_event, create_ticket, get_ticket, history,
                          mask_address, new_ticket_id, public_view, reopen)
 from test_engine import add, fresh, seeded
@@ -203,6 +203,47 @@ class ReplyTests(unittest.TestCase):
         self.assertIn("missing ticket number", check_reply(DISCLAIMER, "HW-ABCDEFGH"))
         self.assertIn("missing 'we do not file with the city' notice", check_reply("hello HW-ABCDEFGH", "HW-ABCDEFGH"))
         self.assertIn("missing emergency instruction", check_reply(f"HW-ABCDEFGH {DISCLAIMER}", "HW-ABCDEFGH", True))
+
+    def test_spanish_reply_has_required_parts_and_passes_its_own_gate(self):
+        conn = seeded()
+        intake, a, t = make(conn, lang="es")
+        text = build_reply(a, t.id, scope=intake.scope, lang="es")
+        self.assertIn(t.id, text)
+        self.assertIn(DISCLAIMER_ES, text)
+        self.assertNotIn(DISCLAIMER, text)          # the English disclaimer is not also present
+        self.assertIn("estimado basado en quejas anteriores", text)
+
+    def test_spanish_safety_reply_leads_with_911(self):
+        conn = seeded()
+        intake, a, t = make(conn, scope="apartment", safety_flag=True, lang="es")
+        text = build_reply(a, t.id, safety_flag=True, scope="apartment", lang="es")
+        self.assertIn("911", text)
+        self.assertIn("vecinos", text)
+
+    def test_spanish_out_of_area_reply(self):
+        text = build_out_of_area_reply(lang="es")
+        self.assertIn("Washington Heights e Inwood", text)
+        self.assertIn(DISCLAIMER_ES, text)
+
+    def test_gate_requires_the_spanish_disclaimer_for_a_spanish_reply(self):
+        """The required-notice check has to actually look for the Spanish phrase when
+        lang='es' -- not just pass because *some* disclaimer-shaped text is present."""
+        tid = "HW-ABCDEFGH"
+        self.assertIn("missing 'we do not file with the city' notice",
+                      check_reply(f"{tid} {DISCLAIMER}", tid, lang="es"))   # English text, Spanish lang
+        self.assertEqual(check_reply(f"{tid} {DISCLAIMER_ES}", tid, lang="es"), [])
+
+    def test_gate_blocks_spanish_filing_claims_promises_and_pii_requests(self):
+        tid = "HW-ABCDEFGH"
+        for bad in ("Ya hemos presentado su queja con HPD.", "Se lo reparará mañana.",
+                    "Garantizamos una reparación rápida.", "¿Cuál es su número de teléfono?",
+                    "¿Me puede dar su nombre completo?"):
+            with self.assertRaises(ReplyViolation, msg=bad):
+                gate(f"{tid} {bad} {DISCLAIMER_ES}", tid, lang="es")
+        # The real reply's own Spanish wording is never falsely flagged.
+        self.assertEqual(check_reply(
+            f"{tid} déles un número de teléfono donde puedan localizarlo/a. {DISCLAIMER_ES}",
+            tid, lang="es"), [])
 
     def test_out_of_area_assessment_rejected_by_builder(self):
         conn = seeded()

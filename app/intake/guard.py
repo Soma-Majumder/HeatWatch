@@ -60,15 +60,19 @@ def detect_safety(text: str) -> bool:
 
 
 _NUM_WORDS = (r"one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|"
-              r"thirty|forty|forty-eight|an?|half\s+a")
-_UNITS = r"(?:hours?|hrs?|h|days?|weeks?)"
+              r"thirty|forty|forty-eight|an?|half\s+a|"
+              # Spanish (issue #16: intake must work in Spanish, not just the replies)
+              r"uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce|quince|veinte|"
+              r"treinta|cuarenta|cuarenta\s+y\s+ocho|un|una|media")
+_UNITS = r"(?:hours?|hrs?|h|days?|weeks?|horas?|d[ií]as?|semanas?)"
 _EXPLICIT_DURATION = re.compile(
     rf"(?:\b\d+(?:\.\d+)?\s*{_UNITS}\b|\b(?:{_NUM_WORDS})\s+{_UNITS}\b)", re.I)
 
 
 _UNSURE = re.compile(
     r"(not\s+sure|unsure|don'?t\s+know|do\s+not\s+know|no\s+idea|dunno|can'?t\s+(say|tell)|"
-    r"cannot\s+(say|tell)|not\s+certain)", re.I)
+    r"cannot\s+(say|tell)|not\s+certain|"
+    r"no\s+s[eé]|no\s+estoy\s+segur[oa]|ni\s+idea|no\s+puedo\s+decir)", re.I)
 
 
 def is_unsure(text: str) -> bool:

@@ -90,6 +90,14 @@ class DurationGuardTests(unittest.TestCase):
                   "for 1.5 hours", "since 2 days ago"):
             self.assertTrue(has_explicit_duration(t), t)
 
+    def test_explicit_in_spanish(self):
+        """A Spanish-speaking tenant giving an explicit duration must be accepted the same
+        way an English one is -- found via an end-to-end test that silently kept re-asking
+        because this regex only recognized English unit words."""
+        for t in ("unas 20 horas", "dos días", "dos dias", "3 hrs", "media hora", "una hora",
+                  "dos semanas"):
+            self.assertTrue(has_explicit_duration(t), t)
+
     def test_unsure(self):
         from app.intake.guard import is_unsure
         for t in ("I'm not sure", "i don't know", "no idea", "dunno", "can't say"):
@@ -97,9 +105,20 @@ class DurationGuardTests(unittest.TestCase):
         for t in ("about 10 hours", "since last night", ""):
             self.assertFalse(is_unsure(t), t)
 
+    def test_unsure_in_spanish(self):
+        from app.intake.guard import is_unsure
+        for t in ("no sé", "no se", "no estoy segura", "no estoy seguro", "ni idea"):
+            self.assertTrue(is_unsure(t), t)
+        for t in ("unas 20 horas", ""):
+            self.assertFalse(is_unsure(t), t)
+
     def test_vague(self):
         for t in ("since last night", "since yesterday", "this morning", "a while", "for a bit",
                   "a couple of days", "all day", ""):
+            self.assertFalse(has_explicit_duration(t), t)
+
+    def test_vague_in_spanish(self):
+        for t in ("desde anoche", "desde ayer", "un rato", ""):
             self.assertFalse(has_explicit_duration(t), t)
 
 
@@ -169,6 +188,23 @@ class AgentTests(unittest.TestCase):
         self.assertIn("911", r.message)
         self.assertEqual(r.assessment.override, "safety_risk")
         self.assertEqual(r.assessment.priority, "critical")
+
+    def test_spanish_conversation_produces_a_spanish_reply(self):
+        """The model reports lang='es' (per the system prompt, it's supposed to notice
+        and record this); the final reply should actually come back in Spanish, not
+        fall through to the English default."""
+        s, _ = session([
+            reply({"address": "1 Quiet St", "scope": "building", "problem": "heat", "lang": "es"},
+                 "¿Cuánto tiempo ha estado sin calefacción?"),
+            reply({"duration_hours": 20}, "Gracias.", ready=True),
+        ])
+        r1 = s.step("No tenemos calefacción en 1 Quiet St")
+        self.assertFalse(r1.done)
+        r2 = s.step("unas 20 horas")
+        self.assertTrue(r2.done)
+        self.assertIn(r2.ticket_id, r2.message)
+        self.assertIn("HeatWatch no presenta quejas ante la ciudad", r2.message)
+        self.assertNotIn("does not file complaints", r2.message)
 
     def test_out_of_area_has_no_ticket(self):
         s, _ = session([reply({"address": "5 Main St", "scope": "building", "problem": "heat",
