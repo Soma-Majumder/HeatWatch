@@ -175,6 +175,30 @@ class ReplyTests(unittest.TestCase):
             with self.assertRaises(ReplyViolation, msg=bad):
                 gate(f"{tid} {bad} {DISCLAIMER}", tid)
 
+    def test_gate_blocks_requests_for_personal_information(self):
+        """The intake prompt already says not to ask for these; this is the code-level
+        backstop in case the model asks anyway."""
+        tid = "HW-ABCDEFGH"
+        for bad in ("Could you tell me your name?", "What's your phone number?",
+                    "Can I get your email address?", "Please share your social security number."):
+            with self.assertRaises(ReplyViolation, msg=bad):
+                gate(f"{tid} {bad} {DISCLAIMER}", tid)
+        # The real reply's own wording is never flagged: "a phone number", not "your phone number".
+        self.assertEqual(check_reply(
+            f"{tid} if you report this to 311, give them a phone number where you can be reached. {DISCLAIMER}",
+            tid), [])
+
+    def test_gate_blocks_links_other_than_the_approved_311_one(self):
+        tid = "HW-ABCDEFGH"
+        for bad in ("Verify your ticket at http://heatwatch-verify.com/claim now",
+                    "Check status at scam-site.net for updates",
+                    "See www.not-the-real-site.org for details",
+                    "visit nyc-gov-311.com for help"):
+            with self.assertRaises(ReplyViolation, msg=bad):
+                gate(f"{tid} {bad} {DISCLAIMER}", tid)
+        # The one link HeatWatch's own fixed wording actually uses is never flagged.
+        self.assertEqual(check_reply(f"{tid} {DISCLAIMER}", tid), [])
+
     def test_gate_requires_ticket_disclaimer_and_emergency(self):
         self.assertIn("missing ticket number", check_reply(DISCLAIMER, "HW-ABCDEFGH"))
         self.assertIn("missing 'we do not file with the city' notice", check_reply("hello HW-ABCDEFGH", "HW-ABCDEFGH"))
