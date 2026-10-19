@@ -231,16 +231,35 @@ python3 -m unittest discover -s tests
 
 ### 💬 Try the intake chat
 
+First, set your own model key (never commit it):
+
 ```bash
-export ANTHROPIC_API_KEY=...   # your own key; never commit it
+export ANTHROPIC_API_KEY=...
+```
+
+Then pick how you want to talk to the agent:
+
+**⌨️ Text only** (type and read):
+
+```bash
 python3 -m app.intake
 ```
 
-Add `--speak` to hear each message read aloud (macOS only; Spanish replies use a Spanish voice):
+**🔊 With voice** (the agent also reads each reply out loud, macOS only):
 
 ```bash
 python3 -m app.intake --speak
 ```
+
+### 🌎 Talking to the agent in Spanish
+
+There is no separate Spanish command. **The agent switches to Spanish on its own when you write in Spanish.**
+
+1. Start the chat with either command above. The first greeting is always in English.
+2. Type your first message in Spanish, for example `Hola, no hay calefacción en mi edificio`.
+3. From then on the agent answers in Spanish, and the ticket reply is in Spanish too.
+
+With `--speak`, Spanish replies are read in a Spanish voice (Monica) and English replies in an English voice (Samantha).
 
 ### 🔄 Keep the data fresh
 
