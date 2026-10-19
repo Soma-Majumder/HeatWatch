@@ -54,11 +54,13 @@ We are two builders.
     <td align="center" width="50%">
       <a href="https://github.com/Soma-Majumder"><img src="docs/team/soma.png" width="120" alt="Soma Majumder" /></a><br />
       <b>Soma Majumder</b><br />
+      🎊 Drop by and say hello! Always happy to chat:<br />
       <a href="https://github.com/Soma-Majumder">🐙 GitHub</a> · <a href="https://www.linkedin.com/in/somamajumder/">💼 LinkedIn</a>
     </td>
     <td align="center" width="50%">
       <a href="https://github.com/Diksh-giri"><img src="docs/team/dikshyant.png" width="120" alt="Dikshyant Giri" /></a><br />
       <b>Dikshyant Giri</b><br />
+      🎊 Drop by and say hello! Always happy to chat:<br />
       <a href="https://github.com/Diksh-giri">🐙 GitHub</a> · <a href="https://www.linkedin.com/in/dikshyant-giri/">💼 LinkedIn</a>
     </td>
   </tr>
