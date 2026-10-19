@@ -185,7 +185,7 @@ class IntakeSession:
         except IntakeError:
             return TurnResult(self._ask(None))
         if not a.in_scope:
-            return TurnResult(build_out_of_area_reply(), done=True, assessment=a)
+            return TurnResult(build_out_of_area_reply(lang=intake.lang), done=True, assessment=a)
         ticket = create_ticket(self.conn, intake, a, now)
-        reply = build_reply(a, ticket.id, safety_flag=intake.safety_flag, scope=intake.scope)
+        reply = build_reply(a, ticket.id, safety_flag=intake.safety_flag, scope=intake.scope, lang=intake.lang)
         return TurnResult(reply, done=True, ticket_id=ticket.id, assessment=a)
