@@ -29,7 +29,31 @@ _FORBIDDEN = [
     (re.compile(r"\b(guarantee[ds]?|promise[ds]?)\b", re.I), "makes a guarantee or promise"),
     (re.compile(r"\bwill\s+(definitely\s+)?be\s+(fixed|repaired|resolved|restored)\b", re.I),
      "promises a repair"),
+    # The intake prompt already says not to ask for these; this is the code-level backstop
+    # in case the model asks anyway. Matches "your name/phone/email", not any other use of
+    # those words (the real reply says "give them a phone number", never "your phone number").
+    (re.compile(r"\byour\s+(full\s+|last\s+|first\s+)?name\b|"
+                r"\byour\s+(phone|cell|mobile)(\s+number)?\b|"
+                r"\byour\s+e-?mail(\s+address)?\b|"
+                r"\b(social\s+security|\bssn\b)", re.I),
+     "asks for personal information beyond what intake is allowed to collect"),
 ]
+
+# A model-authored message should never carry a link -- that's a known way a tricked
+# model ends up phishing someone. The one link HeatWatch's own fixed wording uses
+# (nyc.gov/311, in DISCLAIMER) is explicitly allowed; anything else is not.
+_URL = re.compile(r"(?:https?://|www\.)\S+|\b[a-z0-9-]+\.(?:gov|com|org|net|io|co|info|biz)\b(?:/\S*)?", re.I)
+_APPROVED_LINKS = {"nyc.gov/311"}
+
+
+def _disallowed_link(text: str) -> bool:
+    for m in _URL.finditer(text):
+        url = m.group(0).strip(".,;:!?)")
+        normalized = re.sub(r"^https?://", "", url, flags=re.I)
+        normalized = re.sub(r"^www\.", "", normalized, flags=re.I).rstrip("/").lower()
+        if normalized not in _APPROVED_LINKS:
+            return True
+    return False
 
 
 class ReplyViolation(Exception):
@@ -41,6 +65,8 @@ class ReplyViolation(Exception):
 def check_reply(text: str, ticket_id: str | None = None, needs_emergency: bool = False,
                 needs_disclaimer: bool = True) -> list[str]:
     problems = [why for pat, why in _FORBIDDEN if pat.search(text)]
+    if _disallowed_link(text):
+        problems.append("contains a link other than the approved nyc.gov/311")
     if ticket_id and ticket_id not in text:
         problems.append("missing ticket number")
     if needs_disclaimer and "does not file complaints with the city" not in text:
