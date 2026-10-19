@@ -112,3 +112,23 @@ def validate_fields(raw) -> dict:
         if isinstance(raw.get(key), bool):
             out[key] = raw[key]
     return out
+
+
+_DELETE_EN = re.compile(
+    r"(delete|remove|erase|wipe)\s+(all\s+)?(of\s+)?(my|the)\s+(info|information|data|details|address|ticket|record|report)"
+    r"|(my|the)\s+(info|information|data|details|address|record)\s+(deleted|removed|erased)"
+    r"|(please\s+)?forget\s+(me|about\s+me)", re.I)
+_DELETE_ES = re.compile(
+    r"(borr(a|e|en|ar)|elimin(a|e|en|ar)|quit(a|e|en|ar))\s+(todos?\s+)?(mis|mi|los|las)\s+"
+    r"(datos|informaci[oó]n|direcci[oó]n|ticket|registro|reporte)"
+    r"|(mis|mi)\s+(datos|informaci[oó]n|direcci[oó]n)\s+(borrad|eliminad)", re.I)
+
+
+def detect_deletion_request(text: str) -> str | None:
+    """Deterministic check, so a deletion request never depends on the model.
+    Returns the language the request was made in ('en' or 'es'), or None."""
+    if _DELETE_ES.search(text):
+        return "es"
+    if _DELETE_EN.search(text):
+        return "en"
+    return None

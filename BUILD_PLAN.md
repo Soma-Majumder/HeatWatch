@@ -132,7 +132,7 @@ These were open; the team chose to proceed with defaults. Revisit any of them be
 | 1 | Human reviewer and notification | HeatWatch operator, reviewed through the reviewer queue dashboard only (no email/SMS). Still an open question in the PRD. | Phase 5 |
 | 2 | Tenant channel for MVP | Web chat only | Phase 2 |
 | 3 | Hosting | Local demo only; not exposed to real tenants | Phase 7 |
-| 4 | Privacy | Store only the address, ticket details and events; no addresses in logs; 90-day retention proposed | Phase 7 |
+| 4 | Privacy | **Decided (issue #19).** Store only the address, ticket details and events. Retention is 90 days, then tickets, events and escalations are deleted automatically by the daily refresh job. Only reviewers can see tenant addresses and descriptions; a tenant sees only their own ticket's minimal status by ticket number. No addresses in logs. A tenant who asks for deletion is told their information will be deleted automatically within 90 days; there is no manual deletion. | Phase 7 |
 | 5 | Spanish | Included as P1, built in phase 2 after the P0 intake flow works in English | Phase 2 |
 | 6 | Repo layout | App under `/app`, with the PRD and this plan at the repo root | Phase 0 |
 

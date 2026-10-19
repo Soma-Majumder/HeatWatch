@@ -7,7 +7,9 @@ from ..engine import Assessment, Intake, IntakeError, assess
 from ..replies import EMERGENCY, build_out_of_area_reply, build_reply, check_reply
 from ..tickets import create_ticket
 from ..engine import IN_SCOPE_ZIPS
-from .guard import detect_safety, has_explicit_duration, is_unsure, sanitize_text, validate_fields
+from ..config import get_settings
+from ..retention import deletion_request_reply
+from .guard import detect_deletion_request, detect_safety, has_explicit_duration, is_unsure, sanitize_text, validate_fields
 from .llm import LLMError
 from .prompt import build_system_prompt
 
@@ -84,6 +86,11 @@ class IntakeSession:
             return TurnResult("I didn't catch that. Could you tell me what is happening?")
         if self.turns > HARD_TURN_CAP:
             return TurnResult(GIVE_UP, done=True, gave_up=True)
+
+        lang = detect_deletion_request(text)
+        if lang:
+            # Fixed answer, not sent to the model, and the request is kept out of the ticket.
+            return TurnResult(deletion_request_reply(get_settings().retention_days, lang))
 
         self.last_text = text
         previous_description = self.description

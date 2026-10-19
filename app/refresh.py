@@ -1,4 +1,5 @@
-"""Daily refresh: pull new 311 data, drop rows outside the rolling window, rebuild priors.
+"""Daily refresh: purge expired tenant tickets, pull new 311 data, drop rows outside the rolling window,
+rebuild priors.
 
 Run:  python3 -m app.refresh
 
@@ -10,7 +11,7 @@ import logging
 import sys
 from datetime import datetime, timedelta, timezone
 
-from . import loader, priors
+from . import loader, priors, retention
 from .config import Settings, get_settings
 from .db import connect, init_db
 
@@ -39,11 +40,13 @@ def refresh(settings: Settings | None = None, conn=None, now: datetime | None = 
     now = now or datetime.now(timezone.utc)
     started = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     try:
+        # Tenant data past the retention window goes first, so it is deleted even if the data pull fails.
+        purged = retention.purge_expired(conn, settings.retention_days, now)
         loaded = loader.load(settings, conn, now)
         pruned = prune_window(conn, settings.window_days, now)
         built = priors.rebuild_all(conn)
         total = conn.execute("SELECT COUNT(*) FROM hpd_complaints").fetchone()[0]
-        summary = {"started": started, "loaded": loaded, "pruned": pruned, "total_rows": total,
+        summary = {"started": started, "loaded": loaded, "pruned": pruned, "purged_tickets": purged["tickets"], "total_rows": total,
                    "address_stats": built["address_stats"], "priors": built["priors"], "warnings": []}
         if loaded == 0:
             summary["warnings"].append("source returned 0 rows; check the source and the date window")
@@ -65,8 +68,8 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as exc:                      # report and signal failure to cron
         log.error("refresh failed: %s: %s", type(exc).__name__, exc)
         return 1
-    log.info("loaded %d, pruned %d, %d rows in window; %d addresses, %d priors",
-             s["loaded"], s["pruned"], s["total_rows"], s["address_stats"], s["priors"])
+    log.info("loaded %d, pruned %d, purged %d expired tickets, %d rows in window; %d addresses, %d priors",
+             s["loaded"], s["pruned"], s["purged_tickets"], s["total_rows"], s["address_stats"], s["priors"])
     for w in s["warnings"]:
         log.warning(w)
     return 0
