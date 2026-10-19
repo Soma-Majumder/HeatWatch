@@ -19,7 +19,7 @@ class Settings:
     # An address with at least this many complaints over the window is a repeat offender.
     # 200 flags about 21 addresses (19% of complaints, ~11 escalations a day on average).
     repeat_min: int = int(os.environ.get("HEATWATCH_REPEAT_MIN", "200"))
-    # Plan decision 4 (default): 90-day retention for tenant-submitted data
+    # Plan decision 4 (decided, issue #19): 90-day retention, enforced by app.retention in the daily refresh
     retention_days: int = int(os.environ.get("HEATWATCH_RETENTION_DAYS", "90"))
 
 

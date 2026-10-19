@@ -63,7 +63,7 @@ class RefreshTests(unittest.TestCase):
     def test_main_returns_exit_codes(self):
         with mock.patch.object(refresh, "refresh", side_effect=RuntimeError("x")):
             self.assertEqual(refresh.main([]), 1)
-        ok = {"loaded": 1, "pruned": 0, "total_rows": 1, "address_stats": 1, "priors": 1, "warnings": []}
+        ok = {"loaded": 1, "pruned": 0, "purged_tickets": 0, "total_rows": 1, "address_stats": 1, "priors": 1, "warnings": []}
         with mock.patch.object(refresh, "refresh", return_value=ok):
             self.assertEqual(refresh.main([]), 0)
 
