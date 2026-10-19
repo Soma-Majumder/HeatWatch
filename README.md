@@ -153,6 +153,12 @@ python3 -m app.intake
 
 It talks to a model, collects the details, and prints the ticket reply. Tickets are written to your local database.
 
+Add `--speak` to hear each message read aloud (macOS only, uses the built-in `say` command; Spanish replies use a Spanish voice):
+
+```bash
+python3 -m app.intake --speak
+```
+
 ### 🔄 Keep the data fresh
 
 ```bash
