@@ -128,7 +128,7 @@ HeatWatch works in a loop. Each stage feeds the next, and the last one feeds bac
 | 🧠 **Decide** | Score urgency and check for duplicates | ✅ built |
 | 📣 **Act** | Reply with a ticket number, next step and time estimate | ✅ built |
 | 📝 **Feedback** | Save every step; the tenant checks progress by ticket number | 🟡 saving works, lookup page not yet |
-| 🔄 **Loopback** | Re-check tickets that are late, repeated or reopened, and compare our estimates with what really happened | ⏳ not yet |
+| 🔄 **Loopback** | Re-check tickets that are late, repeated or reopened, and compare our estimates with what really happened | 🟡 started: the daily data refresh keeps our time estimates current; late-ticket re-checks are not built yet |
 
 ## 🧰 The harness: "The AI talks. Plain code decides."
 
