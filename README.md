@@ -1,68 +1,177 @@
 # 🔥 HeatWatch
 
-**An AI triage agent for NYC heat and hot water complaints.**
-HeatWatch takes a complaint, works out how urgent it is, tells the tenant what happens next, and lets them follow their ticket by number.
+**An AI helper that sorts NYC heat and hot water complaints by how urgent they are.**
+A tenant tells it what is wrong, and it gives back a ticket number, a priority, a next step and an honest time estimate. 🎫
 
-> 🧭 **Where we are:** the *decision engine*, tickets, replies and a first *intake conversation* are built and tested. The reviewer screens and ticket pages are the next phases.
+> 🧭 **Where we are:** the brain (scoring, duplicates, time estimates), the chat, tickets, replies, Spanish, voice and privacy are built and tested. The reviewer screen, the ticket lookup page and the automatic re-checks are next.
 
 ---
 
 ## 😟 The problem
 
-When the heat goes out in Washington Heights or Inwood, tenants report it to 311 and then wait with little idea what is happening. The public record shows:
+When the heat goes out, tenants report it to 311 and then wait. They don't know if anyone saw it, how serious it was rated, or when it will be fixed.
 
-- 📊 About **40,700 heat and hot water complaints** in the last two years in that one neighborhood (Manhattan Community Board 12)
-- ⏱️ A typical complaint takes about **42 hours** to close, and 1 in 10 takes more than **84 hours**
-- 🔁 About **35%** are closed as duplicates of another report for the same building
-- 🚪 About **14%** are closed because the city could not get access to the apartment
-- 🗓️ No complaint has a due date, and nothing in the record says how urgent it is
+The public record for **Washington Heights and Inwood** (Manhattan Community Board 12) shows:
 
-HeatWatch adds the missing pieces: an urgency ranking, a clear next step, and a ticket you can look up.
+- 📊 **40,700** heat and hot water complaints in two years, in one neighborhood
+- ⏱️ A typical complaint takes about **42 hours** to close, and **1 in 10** takes more than **84 hours**
+- 🔁 About **35%** are closed as a duplicate of another report
+- 🚪 About **14%** are closed because the city could not get into the apartment
+- 🗓️ No complaint has a due date, and nothing says how urgent it is
+
+## 👥 Who is affected
+
+| Who | What they go through |
+|---|---|
+| 🏠 **Tenants** | Cold apartments in winter, no answer, no ticket they can follow. Families with babies or older people are hit hardest. |
+| 👩‍💼 **Reviewers** | A pile of complaints with no ranking. A gas smell or a whole building without heat looks the same as a small issue. |
+| 🏘️ **The neighborhood** | The same buildings keep failing. **21 addresses** account for about **19%** of all complaints. |
+
+## 💡 The solution
+
+HeatWatch gives every complaint three things that are missing today:
+
+1. 🚦 **An urgency level** (low, normal, high, critical)
+2. 👉 **A clear next step**, with an honest time estimate
+3. 🎫 **A ticket number** the tenant can use to check progress
+
+| For... | HeatWatch gives them... |
+|---|---|
+| 🏠 Tenants | A short, kind chat in **English or Spanish**, a ticket number, a priority and a realistic estimate |
+| 👩‍💼 Reviewers | Whole-building outages, gas smells and vulnerable households at the top, so a person looks at them first |
+| 🏘️ The neighborhood | Repeat-offender buildings that stand out |
+
+⚠️ **HeatWatch does not file with the city.** It tells tenants clearly to report to 311 too. HPD (the city housing agency) stays the official record.
 
 ---
 
-## 🧩 How it works
+## 🤝 Who did what
 
-HeatWatch follows a simple loop:
+We are two builders.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <a href="https://github.com/Soma-Majumder"><img src="docs/team/soma.png" width="120" alt="Soma Majumder" /></a><br />
+      <b>Soma Majumder</b><br />
+      <a href="https://github.com/Soma-Majumder">🐙 GitHub</a> · <a href="https://www.linkedin.com/in/somamajumder/">💼 LinkedIn</a>
+    </td>
+    <td align="center" width="50%">
+      <a href="https://github.com/Diksh-giri"><img src="docs/team/dikshyant.png" width="120" alt="Dikshyant Giri" /></a><br />
+      <b>Dikshyant Giri</b><br />
+      <a href="https://github.com/Diksh-giri">🐙 GitHub</a> · <a href="https://www.linkedin.com/in/dikshyant-giri/">💼 LinkedIn</a>
+    </td>
+  </tr>
+</table>
+
+| | 🧑‍💻 Soma | 🧑‍💻 Dikshyant |
+|---|---|---|
+| 📝 **Planning** | Product requirements (PRD), build plan, interfaces doc | Early design docs and project setup, first look at the data |
+| 🧠 **Triage engine** | Address cleaner, priors, scoring and overrides, duplicates, time estimates, backtest | |
+| 📥 **Data** | Data loader, daily refresh job | Day 1 data exploration |
+| 🎫 **Tickets and replies** | Ticket store, reply templates, output gate | |
+| 💬 **Intake chat** | The chat agent: warm tone, asks for hours, politely declines off-topic questions | |
+| 🛡️ **Safety layer** | Architecture diagram and the plain-English security doc | **Led:** input guard hardened and proven with tests |
+| 🌎 **Spanish** | | **Led:** Spanish replies and Spanish intake |
+| 🔊 **Voice** | The `--speak` option (English and Spanish) | |
+| 🔒 **Privacy** | 90-day deletion and deletion requests | |
+| ✔️ **Quality** | Automatic tests on every pull request, README | Tests for the input guard and Spanish |
+
+Together: **33 pull requests** and **135 automated tests**, all passing. ✅
+
+---
+
+## ✅ What we finished
+
+| | Piece | In plain words |
+|---|---|---|
+| 🧠 | **Triage engine** | Scores urgency, spots duplicates, and estimates time to fix using 40,690 past complaints |
+| 💬 | **Intake chat** | A warm chat that collects the address, building or apartment, heat or hot water, and how long |
+| 🛡️ | **Safety layer** | An input guard and an output gate that block tricks, false promises and false "we filed it" claims |
+| 🎫 | **Tickets** | Hard-to-guess ticket numbers and a full log of everything that happens to each complaint |
+| 🌎 | **Spanish** | Spanish replies and a Spanish intake chat |
+| 🔊 | **Voice** | An option to read replies out loud (macOS) |
+| 🔒 | **Privacy** | Tenant data is deleted automatically after **90 days**, and no addresses go in logs |
+| 📥 | **Data pipeline** | Pulls two years of 311 data, refreshes daily, rebuilds the stats |
+| 🔬 | **Backtest** | Replays the scoring on past complaints to see how the bands behave |
+| ✔️ | **Automatic tests** | 135 tests run on every pull request |
+
+### 🧱 The pieces, file by file
+
+| Piece | What it does | Where |
+|---|---|---|
+| 📥 **Data loader** | Pulls two years of complaints from NYC Open Data into a local database | `app/loader.py` |
+| 🗄️ **Database layout** | Tables for tickets, events, escalations, address history and priors | `app/schema.sql` |
+| 🏠 **Address cleaner** | Makes "516 W 156th St." and "516 WEST 156 STREET" match | `app/address.py` |
+| 📈 **Priors and address stats** | Typical close times, duplicate rates, and which addresses keep coming back (21 so far) | `app/priors.py` |
+| ⚖️ **Scoring and overrides** | Turns a complaint into a priority with the reasons listed | `app/triage.py` |
+| 👯 **Duplicate check** | Spots an open complaint already filed at the same address | `app/duplicates.py` |
+| ⏳ **ETA lookup** | Quotes "usually resolved in about X hours, 9 in 10 within Y" | `app/eta.py` |
+| 🧩 **One-call engine** | Complaint in; priority, reasons, duplicate, ETA and escalation out | `app/engine.py` |
+| 🎫 **Ticket store** | Hard-to-guess numbers, a log of every step, and a safe public view | `app/tickets.py` |
+| 💌 **Replies and output gate** | Fixed templates (English and Spanish) that block promises and filing claims | `app/replies.py` |
+| 💬 **Intake agent** | The model only asks and extracts; code checks every field and creates the ticket | `app/intake/` |
+| 🔒 **Retention** | Deletes tenant data after 90 days | `app/retention.py` |
+| 🔬 **Backtest** | Replays the scoring over past complaints | `app/backtest.py` |
+
+---
+
+## 🔁 The loop
+
+HeatWatch works in a loop. Each stage feeds the next, and the last one feeds back into the first.
 
 | Step | What happens | Status |
 |---|---|---|
-| 👀 **Observe** | Collect the complaint and look up the address history | ✅ built (intake chat needs a model key to run live) |
-| 🧠 **Decide** | Score how urgent it is and check for duplicates | ✅ built |
-| 📣 **Act** | Reply with a ticket number, a next step and an expected timeline | ⏳ not yet |
-| 📝 **Feedback** | Save the ticket and let the tenant check progress | ⏳ not yet |
-| 🔄 **Loopback** | Re-check tickets that are late, repeated or reopened | ⏳ not yet |
+| 👀 **Observe** | Chat with the tenant and look up the address history | ✅ built (needs a model key to run live) |
+| 🧠 **Decide** | Score urgency and check for duplicates | ✅ built |
+| 📣 **Act** | Reply with a ticket number, next step and time estimate | ✅ built |
+| 📝 **Feedback** | Save every step; the tenant checks progress by ticket number | 🟡 saving works, lookup page not yet |
+| 🔄 **Loopback** | Re-check tickets that are late, repeated or reopened, and compare our estimates with what really happened | ⏳ not yet |
 
-The main rule: **the AI talks, plain code decides.** The AI model will turn messy tenant text into a short form and write the reply wording. Ordinary code scores urgency, creates tickets and sends escalations, so a tricked model can't change who gets help first.
+## 🧰 The harness: "The AI talks. Plain code decides."
 
-### 🏗️ The full stack
+The **harness** is the ordinary, checkable code that wraps the AI model. Think of it as guard rails. The model is useful for talking to people, but we don't trust it with decisions that matter.
+
+| Who | Job |
+|---|---|
+| 🤖 **The AI model** | Asks questions, understands messy tenant text, writes friendly wording |
+| ⚙️ **The harness (plain code)** | Checks every field, sets the priority, creates tickets, sends escalations |
+
+The harness has four rules:
+
+1. 🚪 **Input guard.** Tenant text is treated as data, never as instructions. Attempts to trick the AI are blocked.
+2. 🔒 **Narrow power.** The AI can't create or change tickets and can't set priority. Only code can.
+3. 🚧 **Output gate.** Every reply is checked before a tenant sees it. It can't promise a repair or say we filed anything.
+4. 🙋 **Humans for the big claims.** Things nobody can verify ("gas smell", "baby at home") always go to a person.
+
+We also keep the AI to **one job**: turn a heat complaint into a triaged ticket. Anything else gets a kind redirect, never an answer.
+
+### 🏗️ Agent architecture
 
 ![Agent architecture diagram](docs/agent-architecture.svg)
 
-The numbered circles (1 to 4) mark where untrusted text could sneak in. The teal boxes are the checks that stand in the way. See [`docs/security-layer.md`](docs/security-layer.md) for the plain-English version.
+The numbered circles (1 to 4) mark where untrusted text could sneak in. The teal boxes are the checks in the way. Plain-English version: [`docs/security-layer.md`](docs/security-layer.md).
 
 ---
 
 ## 🎯 How a complaint is scored
 
-Every complaint gets points. The total decides its priority.
+Every complaint earns points, and the total sets its priority.
 
 ![Threshold chart](docs/threshold-chart.svg)
 
 | Priority | Score | What it means |
 |---|---|---|
-| 🟢 Low | under 3 | Minor, usually an apartment outside heat season |
-| 🔵 Normal | 3 to 4 | A single apartment, heat season, nothing else |
-| 🟠 High | 5 to 7 | A whole building out, or an apartment with a long outage or repeat address |
-| 🔴 Critical | 8 or more, or an override | Needs a person to look at it first |
+| 🟢 Low | under 3 | Minor, usually outside heat season |
+| 🔵 Normal | 3 to 4 | One apartment, heat season, nothing else |
+| 🟠 High | 5 to 7 | A whole building out, or a long outage or repeat address |
+| 🔴 Critical | 8 or more, or an override | A person looks at it first |
 
 ### 🚨 Always critical
 
-Some cases skip the score entirely:
-
-1. ☣️ A **safety risk** is reported (for example a gas smell)
-2. 👶 A **vulnerable household** has no heat during heat season
-3. 🏢 A **whole building** is out and it is also a repeat-offender address, or has been out **24 hours or more**
+1. ☣️ A **safety risk** (for example a gas smell)
+2. 👶 A **vulnerable household** with no heat in heat season
+3. 🏢 A **whole building** out that is also a repeat-offender address, or has been out **24 hours or more**
 
 ### 🧮 Three quick examples
 
@@ -72,27 +181,7 @@ Some cases skip the score entirely:
 | The same, at a repeat-offender address | override fires | 🔴 Critical |
 | Apartment, heat season, outage of 30 hours | 1 + 2 + 2 = 5 | 🟠 High |
 
-> ⚠️ **Honest note:** these weights are our best starting guess, not a proven formula. The public data has no field for outage length, vulnerability or safety, so those weights can't be tested yet. We'll re-check after the first real tickets.
-
----
-
-## ✅ What is built so far
-
-| Piece | What it does | Where |
-|---|---|---|
-| 📥 **Data loader** | Pulls the last two years of complaints from NYC Open Data into a local database | `app/loader.py` |
-| 🗄️ **Database layout** | Tables for tickets, events, escalations, address history and priors | `app/schema.sql` |
-| 🏠 **Address cleaner** | Makes "516 W 156th St." and "516 WEST 156 STREET" match | `app/address.py` |
-| 📈 **Priors and address stats** | Typical close times, duplicate rates, and which addresses keep coming back (21 so far) | `app/priors.py` |
-| ⚖️ **Scoring and overrides** | Turns a complaint into a priority with the reasons listed | `app/triage.py` |
-| 👯 **Duplicate check** | Spots an open complaint already filed at the same address | `app/duplicates.py` |
-| ⏳ **ETA lookup** | Quotes "usually resolved in about X hours, 9 in 10 within Y" | `app/eta.py` |
-| 🧩 **One-call engine** | Takes a complaint and returns priority, reasons, duplicate, ETA and whether to escalate, all in one call | `app/engine.py` |
-| 🎫 **Ticket store** | Creates tickets with hard-to-guess numbers, logs every step, and shows a safe public view | `app/tickets.py` |
-| 💌 **Replies and output gate** | Builds the tenant reply from fixed templates and blocks promises or claims of filing | `app/replies.py` |
-| 💬 **Intake agent** | A short conversation that collects address, building or apartment, heat or hot water, and how long. The model only asks and extracts; code checks every field and creates the ticket. | `app/intake/` |
-| 🔬 **Backtest** | Replays the scoring over past complaints to see how the bands behave | `app/backtest.py` |
-| 🧪 **Tests** | 80 tests covering the loader, refresh job, schema, engine, tickets, replies and intake | `tests/` |
+> ⚠️ **Honest note:** these weights are our best starting guess, not a proven formula. The public data has no field for outage length, vulnerability or safety, so we can't test those yet. We will re-check after the first real tickets.
 
 ### 🔍 What the backtest showed
 
@@ -103,27 +192,23 @@ Some cases skip the score entirely:
 | 🔵 Normal | about 22% | 47 hours |
 | 🟢 Low | about 1% | 39 hours |
 
-Two things to know:
-
-- 🏚️ The bands describe **how bad it is for the tenant**, not how fast the city closes it. Critical cases close sooner largely because many are duplicates.
-- 🔁 A **repeat-offender address** is one with 200 or more complaints in two years. That is 21 addresses, about 19% of all complaints, which works out to roughly 11 escalations a day on average. The backtest counts repeats across the full two years, which overstates what would be known on the day.
+The bands show **how bad it is for the tenant**, not how fast the city closes it. Critical cases close sooner partly because many are duplicates. A **repeat-offender address** has 200 or more complaints in two years: 21 addresses, about 19% of complaints, roughly 11 escalations a day.
 
 ---
 
-## 🚧 What is not built yet
+## 🚧 What comes next
 
-- 🌎 Spanish support for replies (the intake chat can already follow a Spanish speaker)
-- 🖥️ A page or chat for ticket lookup and follow-ups (the data layer exists)
-- 👩‍💼 The reviewer queue and escalation alerts
-- 🔄 Automatic re-check of late and repeated tickets
-- 🛡️ The four security requirements (see below)
+- 🖥️ **Reviewer queue:** a ranked screen with escalation alerts, where only reviewers see tenant details
+- 💻 **Web chat and ticket lookup:** a page to report and to check a ticket by number
+- 🗣️ **Native Spanish review:** a Spanish speaker checks the wording before real tenants see it
+- 🔄 **Late-ticket re-checks:** automatic follow-up on tickets that are overdue, repeated or reopened
 
-### 🛡️ The four security requirements (planned)
-
-1. 📋 The address lookup returns simple facts, never free text written by someone else
-2. 🔒 The AI can't create or change tickets
-3. 💬 Tenant text shown to reviewers is marked as a quote
-4. 🙋 Claims nobody can verify ("gas smell", "infant at home") always go to a person
+| Phase | Goal |
+|---|---|
+| 4️⃣ | Ticket lookup and follow-ups |
+| 5️⃣ | Reviewer queue and escalations |
+| 6️⃣ | Loopback for late and repeat tickets |
+| 7️⃣ | Load and pilot checks |
 
 ---
 
@@ -132,17 +217,15 @@ Two things to know:
 You need **Python 3.10 or newer**. Nothing else to install.
 
 ```bash
-# 1. Pull the last two years of complaints into a local database (about 10 seconds)
+# 1. Pull two years of complaints into a local database (about 10 seconds)
 python3 -m app.loader
 
-# 2. Build the address and prior statistics, then see how the bands behave
+# 2. Build the address stats, then see how the bands behave
 python3 -m app.backtest
 
 # 3. Run the tests
 python3 -m unittest discover -s tests
 ```
-
-The database is saved to `data/heatwatch.db` and is not committed to git.
 
 ### 💬 Try the intake chat
 
@@ -151,9 +234,7 @@ export ANTHROPIC_API_KEY=...   # your own key; never commit it
 python3 -m app.intake
 ```
 
-It talks to a model, collects the details, and prints the ticket reply. Tickets are written to your local database.
-
-Add `--speak` to hear each message read aloud (macOS only, uses the built-in `say` command; Spanish replies use a Spanish voice):
+Add `--speak` to hear each message read aloud (macOS only; Spanish replies use a Spanish voice):
 
 ```bash
 python3 -m app.intake --speak
@@ -165,15 +246,11 @@ python3 -m app.intake --speak
 python3 -m app.refresh
 ```
 
-This pulls new complaints, drops anything older than two years, and rebuilds the address stats and priors. It is safe to run again, and if the city's site is down it leaves your existing data untouched and exits with an error. To run it every morning, add a line like this with `crontab -e` (adjust the folder):
+This pulls new complaints, rebuilds the stats, and deletes tenant data older than 90 days. It is safe to run again, and if the city's site is down it leaves your data alone. To run it every morning, add this with `crontab -e` (adjust the folder):
 
 ```
 0 5 * * * cd /path/to/HeatWatch && /usr/bin/python3 -m app.refresh >> data/refresh.log 2>&1
 ```
-
-When it last ran, and any error, are stored in the database (`meta` table: `last_refresh`, `last_refresh_error`).
-
-✔️ **Tests run automatically** on every pull request and on pushes to `main` (GitHub Actions, Python 3.10 and 3.13). The workflow is in `.github/workflows/tests.yml`.
 
 ---
 
@@ -181,49 +258,34 @@ When it last ran, and any error, are stored in the database (`meta` table: `last
 
 ```
 HeatWatch/
-├── app/                    the engine
-│   ├── loader.py           pulls 311 data
-│   ├── refresh.py          daily job: load, prune, rebuild priors
-│   ├── address.py          cleans addresses
-│   ├── priors.py           builds close-time stats and repeat flags
-│   ├── triage.py           scoring and overrides
-│   ├── duplicates.py       duplicate detection
-│   ├── eta.py              expected timeline
-│   ├── engine.py           one call: complaint in, full assessment out
-│   ├── tickets.py          ticket store and public view
-│   ├── intake/             the intake conversation (guard, prompt, model client, agent)
-│   ├── replies.py          reply templates and output gate
-│   └── backtest.py         checks the bands against history
-├── tests/                  unit tests
-├── docs/
-│   ├── agent-architecture.svg   the stack diagram
-│   ├── threshold-chart.svg      the scoring chart
-│   └── security-layer.md        plain-English security addendum
-├── BUILD_PLAN.md           phase-by-phase plan
-├── INTERFACES.md           contracts between the engine and the agent/interface
-└── HeatWatch PRD.docx      product requirements
+├── app/                 the engine
+│   ├── loader.py        pulls 311 data
+│   ├── refresh.py       daily job: load, prune, rebuild stats, delete old tenant data
+│   ├── retention.py     90-day deletion
+│   ├── address.py       cleans addresses
+│   ├── priors.py        close-time stats and repeat flags
+│   ├── triage.py        scoring and overrides
+│   ├── duplicates.py    duplicate detection
+│   ├── eta.py           expected timeline
+│   ├── engine.py        one call: complaint in, full assessment out
+│   ├── tickets.py       ticket store and public view
+│   ├── replies.py       reply templates (English and Spanish) and output gate
+│   ├── backtest.py      checks the bands against history
+│   └── intake/          the chat: guard, prompt, model client, agent, voice
+├── tests/               135 tests
+├── docs/                diagrams and the security doc
+├── BUILD_PLAN.md        phase-by-phase plan
+├── INTERFACES.md        contracts between the engine and the agent
+└── HeatWatch PRD.docx   product requirements
 ```
 
----
-
-## 🗺️ What's next
-
-| Phase | Goal |
-|---|---|
-| 2️⃣ | Chat intake that collects the complaint |
-| 3️⃣ | Tickets and replies |
-| 4️⃣ | Ticket lookup and follow-ups |
-| 5️⃣ | Reviewer queue and escalations |
-| 6️⃣ | Loopback for late and repeat tickets |
-| 7️⃣ | Privacy, load and pilot checks |
-
-📚 More detail: [`BUILD_PLAN.md`](BUILD_PLAN.md) · [`docs/security-layer.md`](docs/security-layer.md)
+📚 More detail: [`BUILD_PLAN.md`](BUILD_PLAN.md) · [`INTERFACES.md`](INTERFACES.md) · [`docs/security-layer.md`](docs/security-layer.md)
 
 ---
 
 ## 📌 Good to know
 
-- 🏙️ **Scope:** Manhattan Community Board 12 (Washington Heights and Inwood), heat and hot water complaints only.
-- 🏛️ **HeatWatch doesn't file complaints with the city.** It triages and advises; HPD (the city housing agency) remains the official record.
-- 🏘️ **Public housing (NYCHA)** is handled through a separate city process and is out of scope.
+- 🏙️ **Scope:** Washington Heights and Inwood (Community Board 12), heat and hot water only.
+- 🏛️ **We don't file with the city.** HeatWatch triages and advises; HPD remains the official record.
+- 🏘️ **Public housing (NYCHA)** has its own city process and is out of scope.
 - 📡 **Data source:** [NYC Open Data, 311 Service Requests](https://data.cityofnewyork.us/resource/fbiz-gkhq.json)
