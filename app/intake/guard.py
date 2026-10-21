@@ -16,7 +16,17 @@ _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _SPACE = re.compile(r"\s+")
 _SAFETY = re.compile(
     r"(smell(s|ed|ing)?\s+(of\s+|like\s+)?gas|gas\s+(smell|leak|odor|odour)|carbon\s+monoxide"
-    r"|\bco\s+(alarm|detector))", re.I)
+    r"|\bco\s+(alarm|detector)"
+    # Spanish: "huele a gas", "olor a gas", "fuga de gas", "monoxido de carbono"
+    r"|(huele|huelo|huelen|olor)\s+(a|de)\s+gas|huelo\s+gas|(fuga|escape)\s+de\s+gas"
+    r"|mon[o\u00f3]xido\s+de\s+carbono)", re.I)
+
+# A report like "no gas smell" or "I don't smell gas" is the tenant answering "no", not
+# raising an alarm. A negator only counts when it sits right before the match (at most two
+# filler words between), so "no heat but I smell gas" still triggers. When in doubt, trigger.
+_NEGATED = re.compile(
+    r"\b(no|not|never|without|sin|ni|nunca|(do|does|did|have|has)n'?t|(do|does|did)\s+not)\s+"
+    r"(?:(?:any|a|an|the|really|ever|even|one|hay|ning[u\u00fa]n|ninguna|un|una|el|la)\s+){0,2}$", re.I)
 
 # Common single-character look-alikes from other scripts (Cyrillic, Greek) for the
 # Latin letters the safety words above are built from -- not the full Unicode
@@ -55,8 +65,12 @@ def detect_safety(text: str) -> bool:
     visually identical Cyrillic or Greek letter into a trigger word -- the whole
     point of this check is that it doesn't depend on the model, so it shouldn't
     be easy to slip past with character tricks either.
+
+    A negated mention ("no gas smell", "I don't smell gas", "sin olor a gas") does not
+    count, but any un-negated mention anywhere in the text still does.
     """
-    return bool(_SAFETY.search((text or "").translate(_CONFUSABLES)))
+    t = (text or "").translate(_CONFUSABLES).replace("\u2019", "'")
+    return any(not _NEGATED.search(t[:m.start()]) for m in _SAFETY.finditer(t))
 
 
 _NUM_WORDS = (r"one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|"
