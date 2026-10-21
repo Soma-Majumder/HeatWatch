@@ -44,6 +44,30 @@ class GuardTests(unittest.TestCase):
         for t in ("no heat since last night", "the gas stove works", "we have no hot water"):
             self.assertFalse(detect_safety(t), t)
 
+    def test_safety_detection_ignores_negated_mentions(self):
+        """A tenant answering 'no' to 'any gas smell?' must not trigger the emergency path."""
+        for t in ("no gas smell", "there is no smell of gas", "I don't smell gas", "I do not smell any gas",
+                  "we didn\u2019t smell gas", "no gas leak", "sin olor a gas", "no huelo a gas",
+                  "no hay olor a gas", "no hay ning\u00fan olor a gas", "sin fuga de gas"):
+            self.assertFalse(detect_safety(t), t)
+
+    def test_safety_detection_still_fires_when_a_negation_is_elsewhere(self):
+        for t in ("no heat but I smell gas", "no, I smell gas", "there is no smell of gas, wait, now I smell gas",
+                  "I can't tell if it's a gas leak", "not sure, maybe a gas smell"):
+            self.assertTrue(detect_safety(t), t)
+
+    def test_safety_detection_in_spanish(self):
+        for t in ("huele a gas en el pasillo", "huelo gas", "hay olor a gas", "hay una fuga de gas",
+                  "alarma de mon\u00f3xido de carbono", "no hay calefacci\u00f3n y huele a gas"):
+            self.assertTrue(detect_safety(t), t)
+        for t in ("no hay calefacci\u00f3n", "la estufa de gas funciona"):
+            self.assertFalse(detect_safety(t), t)
+
+    def test_negated_gas_answer_does_not_raise_the_safety_flag(self):
+        s, _ = session([reply({"address": "1 Quiet St", "scope": "building", "problem": "heat"}, ready=False)])
+        s.step("no heat in the whole building at 1 Quiet St, no gas smell")
+        self.assertNotIn("safety_flag", s.fields)
+
     def test_safety_detection_survives_look_alike_characters(self):
         """This is the one check that's supposed to not depend on the model noticing a gas
         smell -- it shouldn't be possible to slip past it with a visually identical
